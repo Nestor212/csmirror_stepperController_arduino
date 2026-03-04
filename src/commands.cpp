@@ -105,7 +105,7 @@ static void handle_move_command(Axis* ax, char motor_id, const LimitsState& lim,
   float speed = 0.0f;
   float accel = 0.0f;
 
-  if (sscanf(cmd_cstr, "%*s %*c %d %ld %f %f", &dir, &steps, &speed, &accel) < 4)
+  if (sscanf(cmd_cstr, "%*s %*s %d %ld %f %f", &dir, &steps, &speed, &accel) < 4)
   {
     Serial.println("ERR:Invalid MOVE command format.");
     //print command string for debugging
@@ -171,7 +171,6 @@ static void handle_move_command(Axis* ax, char motor_id, const LimitsState& lim,
   Serial.print(speed, 2);
   Serial.print(" accel=");
   Serial.println(accel, 2);
-  Serial.println("OK");
 }
 
 static void handle_moveto_command(Axis* ax, char motor_id, const LimitsState& lim, const char* cmd_cstr)
@@ -181,7 +180,7 @@ static void handle_moveto_command(Axis* ax, char motor_id, const LimitsState& li
   float speed = 0.0f;
   float accel = 0.0f;
 
-  if (sscanf(cmd_cstr, "%*s %*c %ld %f %f", &pos, &speed, &accel) < 3)
+  if (sscanf(cmd_cstr, "%*s %*s %ld %f %f", &pos, &speed, &accel) < 3)
   {
     Serial.println("Invalid MOVETO command format.");
     Serial.println("ERR");
@@ -222,7 +221,7 @@ static void handle_moveto_command(Axis* ax, char motor_id, const LimitsState& li
   Serial.print(speed, 2);
   Serial.print(" accel=");
   Serial.println(accel, 2);
-  Serial.println("OK");
+
 }
 
 static void handle_home_or_zero(Axis* ax, char motor_id, const LimitsState& lim, const String& action)
@@ -240,7 +239,7 @@ static void handle_home_or_zero(Axis* ax, char motor_id, const LimitsState& lim,
 
   // You can add a true "zero" routine later; for now both run the full homing sequence.
   startHoming(*ax);
-  Serial.println("OK");
+
 }
 
 void printStatus(const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
