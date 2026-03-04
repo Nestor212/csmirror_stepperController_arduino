@@ -352,9 +352,9 @@ void handleCmd(String s, LimitsState& lim, Axis& tiptilt, Axis& azimuth)
   if (streq(action, "status")) { cmd_status(lim, tiptilt, azimuth); return; }
   if (streq(action, "enable_limits")) { cmd_enable_limits(lim); return; }
   if (streq(action, "disable_limits")) { cmd_disable_limits(lim); return; }
-  if (streq(action, "enableall")) { cmd_enableall(tiptilt, azimuth); return; }
-  if (streq(action, "disableall")) { cmd_disableall(tiptilt, azimuth); return; }
-  if (streq(action, "stopall")) { cmd_stopall(tiptilt, azimuth); return; }
+  if (streq(action, "enable_all")) { cmd_enableall(tiptilt, azimuth); return; }
+  if (streq(action, "disable_all")) { cmd_disableall(tiptilt, azimuth); return; }
+  if (streq(action, "stop_all")) { cmd_stopall(tiptilt, azimuth); return; }
 
   // Per-axis commands require tok[1] = axis id
   if (ntok < 2 || !tok[1] || !tok[1][0]) {
