@@ -168,6 +168,7 @@ void updateHoming(Axis& ax)
       if (ax.stepper.distanceToGo() == 0)
       { 
         ax.homed = true;
+        ax.posValid = true;
         ax.hs = HomeState::DONE;
       }
       return;

@@ -31,6 +31,7 @@ struct Axis {
   HomeState hs = HomeState::IDLE;
   bool enabled = false;
   bool homed = false;
+  bool posValid = false;
 
   long maxPos = 0;
   uint32_t t_ms = 0;

@@ -2,9 +2,10 @@
 #include <Arduino.h>
 #include "axis.h"
 #include "limits.h"
+#include "system_state.h"
 
 // Print system status (same as your original)
-void printStatus(const LimitsState& lim, Axis& tiptilt, Axis& azimuth);
+void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth);
 
 // Handle one command line (lowercased + trimmed inside)
-void handleCmd(String s, LimitsState& lim, Axis& tiptilt, Axis& azimuth);
+void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis& azimuth);

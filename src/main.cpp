@@ -6,10 +6,16 @@
 #include "limits.h"
 #include "homing.h"
 #include "commands.h"
+#include "system_state.h"
 
 // Axis instances
 Axis tiptilt(MOTOR_A_STEP, MOTOR_A_DIR, MOTOR_A_EN, PHOTODETECTOR_A1, PHOTODETECTOR_A2);
 Axis azimuth(MOTOR_B_STEP, MOTOR_B_DIR, MOTOR_B_EN, PHOTODETECTOR_B1, PHOTODETECTOR_B2);
+
+SystemState sys;   // NEW
+
+static bool tiptiltWasMoving = false;
+static bool azimuthWasMoving = false;
 
 // Limits state
 LimitsState lim;
@@ -65,6 +71,23 @@ void loop()
   else
     updateHoming(azimuth);
 
+  bool movingA = (tiptilt.stepper.distanceToGo() != 0);
+  bool movingB = (azimuth.stepper.distanceToGo() != 0);
+
+  if (tiptiltWasMoving && !movingA) {
+    bumpSeq(sys);
+    Serial.print(F("EVENT move_done a pos="));
+    Serial.println(tiptilt.stepper.currentPosition());
+  }
+  if (azimuthWasMoving && !movingB) {
+    bumpSeq(sys);
+    Serial.print(F("EVENT move_done b pos="));
+    Serial.println(azimuth.stepper.currentPosition());
+  }
+
+  azimuthWasMoving = movingB;
+  tiptiltWasMoving = movingA;
+
   // Read commands (same behavior as your original)
   while (Serial.available())
   {
@@ -72,7 +95,7 @@ void loop()
     if (c == '\r') continue;
     if (c == '\n')
     {
-      handleCmd(line, lim, tiptilt, azimuth);
+      handleCmd(line, sys, lim, tiptilt, azimuth);
       line = "";
     } 
     else 
