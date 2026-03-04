@@ -107,8 +107,19 @@ static void handle_move_command(Axis* ax, char motor_id, const LimitsState& lim,
 
   if (sscanf(cmd_cstr, "%*s %*c %d %ld %f %f", &dir, &steps, &speed, &accel) < 4)
   {
-    Serial.println("Invalid MOVE command format.");
-    Serial.println("ERR");
+    Serial.println("ERR:Invalid MOVE command format.");
+    //print command string for debugging
+    Serial.print("Received command: ");
+    Serial.println(cmd_cstr);
+    //print individual parsed values for debugging
+    Serial.print("Parsed dir: ");
+    Serial.print(dir);  
+    Serial.print(" steps: ");
+    Serial.print(steps);
+    Serial.print(" speed: ");
+    Serial.print(speed);
+    Serial.print(" accel: ");    
+    Serial.println(accel);
     return;
   }
 
