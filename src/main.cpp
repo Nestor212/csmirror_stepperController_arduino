@@ -44,6 +44,8 @@ void setup()
   tiptilt.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
   azimuth.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
 
+  systemStateInit(sys); // NEW
+
   Serial.println("READY");
 }
 
