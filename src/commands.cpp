@@ -1,198 +1,281 @@
 #include "commands.h"
 #include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "config.h"
 #include "homing.h"
 #include "limits.h"
 #include "axis.h"
 
-static bool handle_special_command(const String& action, LimitsState& lim, Axis& tiptilt, Axis& azimuth)
+// -------------------- small helpers --------------------
+
+static int split_tokens(char* s, char* out[], int max_tokens)
 {
-  if (action == "status")
-  {
-    printStatus(lim, tiptilt, azimuth);
-    return true;
-  }
+  // Splits on whitespace in-place. Returns token count.
+  int n = 0;
+  while (*s && n < max_tokens) {
+    // skip leading whitespace
+    while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') s++;
+    if (!*s) break;
 
-  if (action == "enable_limits")
-  {
-    lim.enabled = true;
-    Serial.println("Limit switches enabled.");
-    return true;
-  }
+    out[n++] = s;
 
-  if (action == "disable_limits")
-  {
-    lim.enabled = false;
-    if (LIMITS_TIMEOUT_MS > 0)
-    {
-      lim.disableUntilMs = millis() + LIMITS_TIMEOUT_MS;
-      Serial.print("Limit switches disabled for ");
-      Serial.print(LIMITS_TIMEOUT_MS);
-      Serial.println(" ms.");
-    } else {
-      Serial.println("Limit switches disabled.");
-    }
-    return true;
-  }
+    // advance to end of token
+    while (*s && *s != ' ' && *s != '\t' && *s != '\r' && *s != '\n') s++;
 
-  if (action == "stopall")
-  {
-    stopAxis(tiptilt);
-    stopAxis(azimuth);
-    Serial.println("All motors stopped.");
-    return true;
+    // terminate token
+    if (*s) *s++ = '\0';
   }
-
-  if (action == "enableall")
-  {
-    setEnable(tiptilt, true);
-    setEnable(azimuth, true);
-    Serial.println("All motors enabled.");
-    return true;
-  }
-
-  if (action == "disableall")
-  {
-    setEnable(tiptilt, false);
-    setEnable(azimuth, false);
-    Serial.println("All motors disabled.");
-    return true;
-  }
-
-  return false;
+  return n;
 }
 
-static bool handle_motor_action(Axis* ax, char motor_id, const String& action)
+static bool streq(const char* a, const char* b) { return strcmp(a, b) == 0; }
+
+// safe-ish parse helpers (no exceptions)
+static bool parse_int(const char* s, int& out)
 {
-  if (!ax) return false;
-
-  if (action == "enable")
-  {
-    setEnable(*ax, true);
-    Serial.print("Motor ");
-    Serial.print((char)toupper(motor_id));
-    Serial.println(" enabled.");
-    return true;
-  }
-
-  if (action == "disable")
-  {
-    setEnable(*ax, false);
-    Serial.print("Motor ");
-    Serial.print((char)toupper(motor_id));
-    Serial.println(" disabled.");
-    return true;
-  }
-
-  if (action == "stop")
-  {
-    stopAxis(*ax);
-    Serial.print("Motor ");
-    Serial.print((char)toupper(motor_id));
-    Serial.println(" stopped.");
-    return true;
-  }
-
-  return false;
+  if (!s || !*s) return false;
+  char* end = nullptr;
+  long v = strtol(s, &end, 10);
+  if (end == s) return false;
+  out = (int)v;
+  return true;
 }
 
-static void handle_move_command(Axis* ax, char motor_id, const LimitsState& lim, const char* cmd_cstr)
+static bool parse_long(const char* s, long& out)
 {
-  // Format: move <motor> <dir> <steps> <speed> <accel>
-  // dir: 0 = negative, 1 = positive
+  if (!s || !*s) return false;
+  char* end = nullptr;
+  long v = strtol(s, &end, 10);
+  if (end == s) return false;
+  out = v;
+  return true;
+}
+
+static bool parse_float(const char* s, float& out)
+{
+  if (!s || !*s) return false;
+
+  out = atof(s);   // AVR-safe
+  return true;
+}
+
+// Map 'a'/'b' to axis pointer
+static Axis* axisFromId(char id, Axis& tiptilt, Axis& azimuth)
+{
+  if (id == 'a') return &tiptilt;
+  if (id == 'b') return &azimuth;
+  return nullptr;
+}
+
+// -------------------- command handlers --------------------
+
+static void cmd_status(const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
+{
+  printStatus(lim, tiptilt, azimuth);
+}
+
+static void cmd_enable_limits(LimitsState& lim)
+{
+  lim.enabled = true;
+  Serial.println("Limit switches enabled.");
+  Serial.println("OK");
+}
+
+static void cmd_disable_limits(LimitsState& lim)
+{
+  lim.enabled = false;
+  if (LIMITS_TIMEOUT_MS > 0) {
+    lim.disableUntilMs = millis() + LIMITS_TIMEOUT_MS;
+    Serial.print("Limit switches disabled for ");
+    Serial.print(LIMITS_TIMEOUT_MS);
+    Serial.println(" ms.");
+  } else {
+    Serial.println("Limit switches disabled.");
+  }
+  Serial.println("OK");
+}
+
+static void cmd_enableall(Axis& tiptilt, Axis& azimuth)
+{
+  setEnable(tiptilt, true);
+  setEnable(azimuth, true);
+  Serial.println("All motors enabled.");
+  Serial.println("OK");
+}
+
+static void cmd_disableall(Axis& tiptilt, Axis& azimuth)
+{
+  setEnable(tiptilt, false);
+  setEnable(azimuth, false);
+  Serial.println("All motors disabled.");
+  Serial.println("OK");
+}
+
+static void cmd_stopall(Axis& tiptilt, Axis& azimuth)
+{
+  stopAxis(tiptilt);
+  stopAxis(azimuth);
+  Serial.println("All motors stopped.");
+  Serial.println("OK");
+}
+
+static void cmd_enable_axis(Axis* ax, char motor_id)
+{
+  if (!ax) { Serial.println("ERR"); return; }
+  setEnable(*ax, true);
+  Serial.print("Motor ");
+  Serial.print((char)toupper(motor_id));
+  Serial.println(" enabled.");
+  Serial.println("OK");
+}
+
+static void cmd_disable_axis(Axis* ax, char motor_id)
+{
+  if (!ax) { Serial.println("ERR"); return; }
+  setEnable(*ax, false);
+  Serial.print("Motor ");
+  Serial.print((char)toupper(motor_id));
+  Serial.println(" disabled.");
+  Serial.println("OK");
+}
+
+static void cmd_stop_axis(Axis* ax, char motor_id)
+{
+  if (!ax) { Serial.println("ERR"); return; }
+  stopAxis(*ax);
+  Serial.print("Motor ");
+  Serial.print((char)toupper(motor_id));
+  Serial.println(" stopped.");
+  Serial.println("OK");
+}
+
+static void cmd_home_axis(Axis* ax, char motor_id, const LimitsState& lim)
+{
+  if (!ax) { Serial.println("ERR"); return; }
+
+  if (!lim.enabled) {
+    Serial.print("ERR:Motor ");
+    Serial.print((char)toupper(motor_id));
+    Serial.println(" limits are disabled. Cannot home.");
+    return;
+  }
+
+  startHoming(*ax);
+  Serial.println("OK");
+}
+
+// Robust MOVE parser:
+// move <axis> <dir> <steps> [speed] [accel]
+static void cmd_move(Axis* ax, char motor_id, const LimitsState& lim, int ntok, char* tok[])
+{
+  if (!ax) { Serial.println("ERR"); return; }
+
+  // tok[0]=move tok[1]=axis tok[2]=dir tok[3]=steps tok[4]=speed tok[5]=accel
+  if (ntok < 4) {
+    Serial.println("ERR:Invalid MOVE command format.");
+    Serial.println("Expected: move <axis> <dir> <steps> [speed] [accel]");
+    return;
+  }
+
   int dir = 0;
   long steps = 0;
-  float speed = 0.0f;
-  float accel = 0.0f;
 
-  if (sscanf(cmd_cstr, "%*s %*s %d %ld %f %f", &dir, &steps, &speed, &accel) < 4)
-  {
-    Serial.println("ERR:Invalid MOVE command format.");
-    //print command string for debugging
-    Serial.print("Received command: ");
-    Serial.println(cmd_cstr);
-    //print individual parsed values for debugging
-    Serial.print("Parsed dir: ");
-    Serial.print(dir);  
-    Serial.print(" steps: ");
-    Serial.print(steps);
-    Serial.print(" speed: ");
-    Serial.print(speed);
-    Serial.print(" accel: ");    
-    Serial.println(accel);
+  if (!parse_int(tok[2], dir) || !parse_long(tok[3], steps)) {
+    Serial.println("ERR:Invalid MOVE args (dir/steps).");
     return;
   }
 
-  if (dir != 0 && dir != 1)
-  {
-    Serial.println("Invalid direction. Must be 0 or 1.");
-    Serial.println("ERR");
+  float speed = ax->stepper.maxSpeed();
+  float accel = 0.0f; // 0 => treated as "constant-ish speed" by your accel fallback
+
+  if (ntok >= 5) {
+    if (!parse_float(tok[4], speed)) {
+      Serial.println("ERR:Invalid speed.");
+      return;
+    }
+  }
+  if (ntok >= 6) {
+    if (!parse_float(tok[5], accel)) {
+      Serial.println("ERR:Invalid accel.");
+      return;
+    }
+  }
+
+  if (dir != 0 && dir != 1) {
+    Serial.println("ERR:dir must be 0 or 1");
     return;
   }
 
-  if (!ax->enabled)
-  {
-    Serial.print("Motor ");
+  if (!ax->enabled) {
+    Serial.print("ERR:Motor ");
     Serial.print((char)toupper(motor_id));
-    Serial.println(" is disabled. Move not started.");
-    Serial.println("ERR");
+    Serial.println(" is disabled.");
     return;
   }
 
   if (speed < 1.0f) speed = 1.0f;
   ax->stepper.setMaxSpeed(speed);
 
-  if (accel < 1.0f) accel = 1000000.0f; // approximate constant speed mode
+  // keep your existing behavior: accel < 1 => huge accel (approx constant speed)
+  if (accel < 1.0f) accel = 1000000.0f;
   ax->stepper.setAcceleration(accel);
 
   long cur = ax->stepper.currentPosition();
   long delta = (dir == 0) ? -steps : +steps;
   long target = cur + delta;
 
-  // Update blocks right before evaluating command
   updateLimitBlocks(*ax, lim);
-
-  if (!allowTarget(*ax, lim, target))
-  {
-    Serial.println("Move blocked by limits or bounds.");
-    Serial.println("ERR");
+  if (!allowTarget(*ax, lim, target)) {
+    Serial.println("ERR:Move blocked by limits or bounds.");
     return;
   }
 
   ax->stepper.moveTo(target);
 
-  Serial.print("Motor ");
-  Serial.print((char)toupper(motor_id));
-  Serial.print(" moving: dir=");
-  Serial.print(dir);
-  Serial.print(" steps=");
-  Serial.print(steps);
-  Serial.print(" speed=");
-  Serial.print(speed, 2);
-  Serial.print(" accel=");
-  Serial.println(accel, 2);
+  Serial.println("OK");
 }
 
-static void handle_moveto_command(Axis* ax, char motor_id, const LimitsState& lim, const char* cmd_cstr)
+// Robust MOVETO parser:
+// moveto <axis> <pos> [speed] [accel]
+static void cmd_moveto(Axis* ax, char motor_id, const LimitsState& lim, int ntok, char* tok[])
 {
-  // Format: moveto <motor> <position> <speed> <accel>
-  long pos = 0;
-  float speed = 0.0f;
-  float accel = 0.0f;
+  if (!ax) { Serial.println("ERR"); return; }
 
-  if (sscanf(cmd_cstr, "%*s %*s %ld %f %f", &pos, &speed, &accel) < 3)
-  {
-    Serial.println("Invalid MOVETO command format.");
-    Serial.println("ERR");
+  // tok[0]=moveto tok[1]=axis tok[2]=pos tok[3]=speed tok[4]=accel
+  if (ntok < 3) {
+    Serial.println("ERR:Invalid MOVETO command format.");
+    Serial.println("Expected: moveto <axis> <pos> [speed] [accel]");
     return;
   }
 
-  if (!ax->enabled)
-  {
-    Serial.print("Motor ");
+  long pos = 0;
+  if (!parse_long(tok[2], pos)) {
+    Serial.println("ERR:Invalid position.");
+    return;
+  }
+
+  float speed = ax->stepper.maxSpeed();
+  float accel = 0.0f;
+
+  if (ntok >= 4) {
+    if (!parse_float(tok[3], speed)) {
+      Serial.println("ERR:Invalid speed.");
+      return;
+    }
+  }
+  if (ntok >= 5) {
+    if (!parse_float(tok[4], accel)) {
+      Serial.println("ERR:Invalid accel.");
+      return;
+    }
+  }
+
+  if (!ax->enabled) {
+    Serial.print("ERR:Motor ");
     Serial.print((char)toupper(motor_id));
-    Serial.println(" is disabled. Move not started.");
-    Serial.println("ERR");
+    Serial.println(" is disabled.");
     return;
   }
 
@@ -203,49 +286,21 @@ static void handle_moveto_command(Axis* ax, char motor_id, const LimitsState& li
   ax->stepper.setAcceleration(accel);
 
   updateLimitBlocks(*ax, lim);
-
-  if (!allowTarget(*ax, lim, pos))
-  {
-    Serial.println("Move blocked by limits or bounds.");
-    Serial.println("ERR");
+  if (!allowTarget(*ax, lim, pos)) {
+    Serial.println("ERR:Move blocked by limits or bounds.");
     return;
   }
 
   ax->stepper.moveTo(pos);
 
-  Serial.print("Motor ");
-  Serial.print((char)toupper(motor_id));
-  Serial.print(" moving to: pos=");
-  Serial.print(pos);
-  Serial.print(" speed=");
-  Serial.print(speed, 2);
-  Serial.print(" accel=");
-  Serial.println(accel, 2);
-
+  Serial.println("OK");
 }
 
-static void handle_home_or_zero(Axis* ax, char motor_id, const LimitsState& lim, const String& action)
-{
-  (void)action;
-
-  if (!lim.enabled)
-  {
-    Serial.print("Motor ");
-    Serial.print((char)toupper(motor_id));
-    Serial.println(" limits are disabled. Cannot home/zero.");
-    Serial.println("ERR");
-    return;
-  }
-
-  // You can add a true "zero" routine later; for now both run the full homing sequence.
-  startHoming(*ax);
-
-}
+// -------------------- public API --------------------
 
 void printStatus(const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
-  auto printAx = [](const char* name, Axis& ax)
-  {
+  auto printAx = [](const char* name, Axis& ax) {
     Serial.print(name);
     Serial.print(" en=");
     Serial.print(ax.enabled);
@@ -270,6 +325,7 @@ void printStatus(const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 
   Serial.print("limitsEnabled=");
   Serial.println(lim.enabled ? 1 : 0);
+
   printAx("Tip/Tilt", tiptilt);
   printAx("Azimuth", azimuth);
 }
@@ -278,71 +334,52 @@ void handleCmd(String s, LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
   s.trim();
   if (!s.length()) return;
-
   s.toLowerCase();
 
+  // copy into mutable buffer for tokenization
   char buf[160];
   s.toCharArray(buf, sizeof(buf));
   buf[sizeof(buf) - 1] = '\0';
 
-  char action_c[32] = {0};
-  char motor_id = '\0';
+  char* tok[8] = {0};
+  int ntok = split_tokens(buf, tok, 8);
+  if (ntok <= 0) return;
 
-  int n = sscanf(buf, "%31s %c", action_c, &motor_id);
-  if (n < 1)
-  {
-    Serial.println("Invalid command format.");
-    Serial.println("ERR");
+  // tok[0] is the action
+  const char* action = tok[0];
+
+  // Global commands
+  if (streq(action, "status")) { cmd_status(lim, tiptilt, azimuth); return; }
+  if (streq(action, "enable_limits")) { cmd_enable_limits(lim); return; }
+  if (streq(action, "disable_limits")) { cmd_disable_limits(lim); return; }
+  if (streq(action, "enableall")) { cmd_enableall(tiptilt, azimuth); return; }
+  if (streq(action, "disableall")) { cmd_disableall(tiptilt, azimuth); return; }
+  if (streq(action, "stopall")) { cmd_stopall(tiptilt, azimuth); return; }
+
+  // Per-axis commands require tok[1] = axis id
+  if (ntok < 2 || !tok[1] || !tok[1][0]) {
+    Serial.println("ERR:Axis required (a/b).");
     return;
   }
 
-  String action(action_c);
-
-  // Special commands (no motor id)
-  if (handle_special_command(action, lim, tiptilt, azimuth)) return;
-
-  if (n < 2)
-  {
-    Serial.println("Motor ID required (a/b).");
-    Serial.println("ERR");
+  char axis_id = tok[1][0]; // expect 'a' or 'b'
+  Axis* ax = axisFromId(axis_id, tiptilt, azimuth);
+  if (!ax) {
+    Serial.println("ERR:Invalid axis (use a or b).");
     return;
   }
 
-  Axis* ax = nullptr;
-  if (motor_id == 'a') ax = &tiptilt;
-  else if (motor_id == 'b') ax = &azimuth;
-  else 
-  {
-    Serial.print("Invalid motor ID: ");
-    Serial.println(motor_id);
-    Serial.println("ERR");
-    return;
-  }
-
-  // Update blocks before action checks (so enable/disable/move sees current limit state)
+  // Update blocks before acting (so we can reject moves)
   updateLimitBlocks(*ax, lim);
 
-  if (handle_motor_action(ax, motor_id, action)) return;
+  if (streq(action, "enable")) { cmd_enable_axis(ax, axis_id); return; }
+  if (streq(action, "disable")) { cmd_disable_axis(ax, axis_id); return; }
+  if (streq(action, "stop")) { cmd_stop_axis(ax, axis_id); return; }
+  if (streq(action, "home") || streq(action, "zero")) { cmd_home_axis(ax, axis_id, lim); return; }
 
-  if (action == "home" || action == "zero")
-  {
-    handle_home_or_zero(ax, motor_id, lim, action);
-    return;
-  }
+  if (streq(action, "move")) { cmd_move(ax, axis_id, lim, ntok, tok); return; }
+  if (streq(action, "moveto")) { cmd_moveto(ax, axis_id, lim, ntok, tok); return; }
 
-  if (action == "move")
-  {
-    handle_move_command(ax, motor_id, lim, buf);
-    return;
-  }
-
-  if (action == "moveto")
-  {
-    handle_moveto_command(ax, motor_id, lim, buf);
-    return;
-  }
-
-  Serial.print("Unknown command: ");
+  Serial.print("ERR:Unknown command: ");
   Serial.println(action);
-  Serial.println("ERR");
 }
