@@ -811,7 +811,12 @@ int main(int argc, char **argv) {
   }
 
   char state_path[PATH_MAX];
-  snprintf(state_path, sizeof(state_path), "%s/state.json", exe_dir);
+  int n = snprintf(state_path, sizeof(state_path), "%s/state.json", exe_dir);
+  if (n < 0 || (size_t)n >= sizeof(state_path)) {
+    // Fallback if path is unexpectedly too long
+    strncpy(state_path, "./state.json", sizeof(state_path) - 1);
+    state_path[sizeof(state_path) - 1] = '\0';
+  } 
 
   int rc = 0;
   if (one_save) {
