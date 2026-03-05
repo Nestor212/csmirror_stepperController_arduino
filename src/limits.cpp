@@ -48,21 +48,75 @@ void enforceHardwareStops(Axis& ax, const LimitsState& lim)
   }
 }
 
-bool allowTarget(Axis& ax, const LimitsState& lim, long target)
+enum class BlockReason : uint8_t {
+  OK = 0,
+  LimitsDisabled,
+  HardBlockBoth,          // blockDir == 2
+  HardBlockNegative,      // blockDir == -1 and target < cur
+  HardBlockPositive,      // blockDir == +1 and target > cur
+  OutOfBoundsLow,         // homed && target < 0
+  OutOfBoundsHigh         // homed && target > maxPos
+};
+
+struct BlockInfo {
+  BlockReason reason = BlockReason::OK;
+  long cur = 0;
+  long target = 0;
+  long maxPos = 0;
+  int8_t blockDir = 0;
+  bool homed = false;
+  bool limitsEnabled = false;
+};
+
+bool allowTarget(Axis& ax, const LimitsState& lim, long target, TargetBlockInfo* info)
 {
-  if (!lim.enabled) return true;
+  long cur = ax.stepper.currentPosition();
+
+  if (info) {
+    info->cur = cur;
+    info->target = target;
+    info->maxPos = ax.maxPos;
+    info->blockDir = ax.blockDir;
+    info->homed = ax.homed;
+    info->limitsEnabled = lim.enabled;
+    info->reason = TargetBlockReason::OK;
+  }
+
+  if (!lim.enabled) {
+    // limits disabled => always allow
+    return true;
+  }
 
   // Block direction if photodetector active
-  long cur = ax.stepper.currentPosition();
-  if (ax.blockDir == 2) return false;
-  if (ax.blockDir == -1 && target < cur) return false;
-  if (ax.blockDir == +1 && target > cur) return false;
+  if (ax.blockDir == 2) {
+    if (info) info->reason = TargetBlockReason::PhotodetectorBlockBoth;
+    return false;
+  }
+  if (ax.blockDir == -1 && target < cur) {
+    if (info) info->reason = TargetBlockReason::PhotodetectorBlockNegative;
+    return false;
+  }
+  if (ax.blockDir == +1 && target > cur) {
+    if (info) info->reason = TargetBlockReason::PhotodetectorBlockPositive;
+    return false;
+  }
 
   // Software bounds if homed
-  if (ax.homed)
+  if (ax.homed) {
+    if (target < 0) {
+      if (info) info->reason = TargetBlockReason::OutOfBoundsLow;
+      return false;
+    }
+    if (target > ax.maxPos) {
+      if (info) info->reason = TargetBlockReason::OutOfBoundsHigh;
+      return false;
+    }
+  } 
+  else 
   {
-    if (target < 0 || target > ax.maxPos) return false;
+
   }
+
   return true;
 }
 

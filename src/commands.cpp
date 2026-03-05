@@ -64,6 +64,44 @@ static Axis* axisFromId(char id, Axis& tiptilt, Axis& azimuth)
   return nullptr;
 }
 
+#include "limits.h"   // for TargetBlockInfo/TargetBlockReason
+
+static void printMoveBlocked(const Axis& ax, const TargetBlockInfo& bi)
+{
+  Serial.print(F("ERR: Move blocked. axis="));
+  Serial.print(ax.id);  // or ax.name / whatever you have
+  Serial.print(F(" cur=")); Serial.print(bi.cur);
+  Serial.print(F(" target=")); Serial.print(bi.target);
+
+  switch (bi.reason) {
+    case TargetBlockReason::PhotodetectorBlockBoth:
+      Serial.println(F(" (photodetector active: both directions blocked)"));
+      break;
+
+    case TargetBlockReason::PhotodetectorBlockNegative:
+      Serial.println(F(" (photodetector active: negative direction blocked)"));
+      break;
+
+    case TargetBlockReason::PhotodetectorBlockPositive:
+      Serial.println(F(" (photodetector active: positive direction blocked)"));
+      break;
+
+    case TargetBlockReason::OutOfBoundsLow:
+      Serial.println(F(" (out of bounds: target < 0)"));
+      break;
+
+    case TargetBlockReason::OutOfBoundsHigh:
+      Serial.print(F(" (out of bounds: target > maxPos="));
+      Serial.print(bi.maxPos);
+      Serial.println(F(")"));
+      break;
+
+    default:
+      Serial.println(F(" (unknown reason)"));
+      break;
+  }
+}
+
 // -------------------- command classification --------------------
 
 enum class CmdClass : uint8_t { UNKNOWN, GLOBAL, AXIS };
@@ -294,8 +332,10 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   long target = cur + delta;
 
   updateLimitBlocks(*ax, lim);
-  if (!allowTarget(*ax, lim, target)) {
-    Serial.println(F("ERR:Move blocked by limits or bounds."));
+
+  TargetBlockInfo bi;
+  if (!allowTarget(*ax, lim, target, &bi)) {
+    printMoveBlocked(*ax, bi);
     return;
   }
 
