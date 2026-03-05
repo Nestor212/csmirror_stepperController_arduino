@@ -2,8 +2,8 @@ CC      := gcc
 CFLAGS  := -O2 -Wall -Wextra -std=c11
 LDFLAGS :=
 
-TARGET  := arduino_motion_cli
-SRC     := arduino_motion_cli.c
+TARGET  := serial_csmirror_cli
+SRC     := serial_csmirror_cli.c
 
 JSONC_CFLAGS := $(shell pkg-config --cflags json-c)
 JSONC_LIBS   := $(shell pkg-config --libs json-c)
