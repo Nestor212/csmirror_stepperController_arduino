@@ -603,7 +603,7 @@ static void cmd_sync(int fd, const char *state_path) {
     return;
   }
 
-  int saved_boot = json_get_int_default(saved, "boot_id", -1);
+  uint32_t saved_boot = (uint32_t)json_get_int_default(saved, "boot_id", -1);
 
   // Always read current status so we can compare boot_id.
   StatusRec cur;
@@ -612,6 +612,7 @@ static void cmd_sync(int fd, const char *state_path) {
     json_object_put(saved);
     return;
   }
+  uint32_t cur_boot = cur.boot_id;
 
   if (saved_boot == cur_boot) {
     printf("SYNC: boot_id matches (%u). Skipping setaxis restore.\n", cur_boot);
