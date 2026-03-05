@@ -66,10 +66,10 @@ static Axis* axisFromId(char id, Axis& tiptilt, Axis& azimuth)
 
 #include "limits.h"   // for TargetBlockInfo/TargetBlockReason
 
-static void printMoveBlocked(const Axis& ax, const TargetBlockInfo& bi)
+static void printMoveBlocked(char axisName, const TargetBlockInfo& bi)
 {
   Serial.print(F("ERR: Move blocked. axis="));
-  Serial.print(ax.id);  // or ax.name / whatever you have
+  Serial.print(axisName);  // or ax.name / whatever you have
   Serial.print(F(" cur=")); Serial.print(bi.cur);
   Serial.print(F(" target=")); Serial.print(bi.target);
 
@@ -335,7 +335,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
 
   TargetBlockInfo bi;
   if (!allowTarget(*ax, lim, target, &bi)) {
-    printMoveBlocked(*ax, bi);
+    printMoveBlocked(axis_id, bi);
     return;
   }
 
@@ -391,8 +391,9 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   ax->stepper.setAcceleration(accel);
 
   updateLimitBlocks(*ax, lim);
-  if (!allowTarget(*ax, lim, pos)) {
-    Serial.println(F("ERR:Move blocked by limits or bounds."));
+  TargetBlockInfo bi;
+  if (!allowTarget(*ax, lim, pos, &bi)) {
+    printMoveBlocked(axis_id, bi);
     return;
   }
 

@@ -30,8 +30,6 @@ struct TargetBlockInfo {
   bool limitsEnabled = false;
 };
 
-
-
 // Read photodetector and interpret as "triggered"
 bool limitTriggered(uint8_t pin);
 
