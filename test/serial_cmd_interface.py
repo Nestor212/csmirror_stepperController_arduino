@@ -140,15 +140,10 @@ def parse_status_lines(lines):
 def open_port(port, baud):
     ser = serial.Serial(port, baud, timeout=0.25)
 
-    # Prevent auto-reset on many Arduino-class boards (optional but recommended).
-    # If your board misbehaves with these, comment them out.
-    try:
-        ser.dtr = False
-        ser.rts = False
-    except Exception:
-        pass
-
+    # Small delay so the USB serial interface settles
     time.sleep(0.2)
+
+    # Clear any startup chatter
     try:
         ser.reset_input_buffer()
     except Exception:
