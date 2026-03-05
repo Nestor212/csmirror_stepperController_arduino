@@ -371,8 +371,8 @@ typedef struct {
 
 typedef struct {
   double ts; // real time timestamp (seconds since epoch)
-  int boot_id;
-  int seq;
+  uint32_t boot_id;
+  uint32_t seq;
   int limitsEnabled;
   AxisState a;
   AxisState b;
