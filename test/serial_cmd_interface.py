@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-
 import argparse
 import json
 import os
+import re
 import sys
 import time
-import re
 
 import serial
 
 DEFAULT_BAUD = 115200
-
 
 # -------------------------------------------------------
 # Help text (shown with -h and in REPL help)
@@ -42,6 +40,9 @@ Axis commands:
 
   moveto <axis> <pos> [speed] [accel]
 
+Chaining commands in this script:
+  Use ':', ';', or '|' to send multiple commands back-to-back.
+
 Example:
   move a 0 10000 100 100 : move b 1 10000 100 100
 """
@@ -50,19 +51,86 @@ LOCAL_COMMANDS = r"""
 Local Commands (cmd> prompt)
 
   help
-  sync
+  save     (send 'status', parse it, update ./state.json)
+  sync     (only restore setaxis from ./state.json if boot_id changed)
   quit / exit
-
-Multiple commands can be chained using:
-  :
-  ;
-  |
-
-Example:
-  move a 0 10000 100 100 : move b 1 10000 100 100
 """
 
 HELP_TEXT = LOCAL_COMMANDS + "\n" + ARDUINO_COMMANDS
+
+
+# -------------------------------------------------------
+# STATUS parsing (matches your Arduino printStatus)
+# -------------------------------------------------------
+
+BOOT_RE = re.compile(r"\bboot_id=(\d+)\b")
+SEQ_RE = re.compile(r"\bseq=(\d+)\b")
+LIMITS_RE = re.compile(r"\blimitsEnabled=(\d+)\b")
+
+AXIS_ID_RE = re.compile(r"\bid=([ab])\b")
+POS_RE = re.compile(r"\bpos=(-?\d+)\b")
+TGT_RE = re.compile(r"\btgt=(-?\d+)\b")
+MAX_RE = re.compile(r"\bmax=(-?\d+)\b")
+VALID_RE = re.compile(r"\bvalid=(\d+)\b")
+HOMED_RE = re.compile(r"\bhomed=(\d+)\b")
+EN_RE = re.compile(r"\ben=(\d+)\b")
+
+
+def parse_status_lines(lines):
+    """
+    Returns a dict suitable for state.json:
+      {
+        ts, boot_id, seq, limitsEnabled,
+        axes: { a:{pos,tgt,max,valid,homed,en}, b:{...} }
+      }
+    """
+    rec = {
+        "ts": time.time(),
+        "boot_id": None,
+        "seq": None,
+        "limitsEnabled": None,
+        "axes": {}
+    }
+
+    for l in lines:
+        m = BOOT_RE.search(l)
+        if m:
+            rec["boot_id"] = int(m.group(1))
+
+        m = SEQ_RE.search(l)
+        if m:
+            rec["seq"] = int(m.group(1))
+
+        m = LIMITS_RE.search(l)
+        if m:
+            rec["limitsEnabled"] = int(m.group(1))
+
+        m = AXIS_ID_RE.search(l)
+        if not m:
+            continue
+
+        axis = m.group(1)
+        mp = POS_RE.search(l)
+        mt = TGT_RE.search(l)
+        mm = MAX_RE.search(l)
+        mv = VALID_RE.search(l)
+        mh = HOMED_RE.search(l)
+        men = EN_RE.search(l)
+
+        # Require at least pos/max/valid to accept axis record
+        if not (mp and mm and mv):
+            continue
+
+        rec["axes"][axis] = {
+            "pos": int(mp.group(1)),
+            "tgt": int(mt.group(1)) if mt else int(mp.group(1)),
+            "max": int(mm.group(1)),
+            "valid": int(mv.group(1)),
+            "homed": int(mh.group(1)) if mh else 0,
+            "en": int(men.group(1)) if men else 0,
+        }
+
+    return rec
 
 
 # -------------------------------------------------------
@@ -71,7 +139,21 @@ HELP_TEXT = LOCAL_COMMANDS + "\n" + ARDUINO_COMMANDS
 
 def open_port(port, baud):
     ser = serial.Serial(port, baud, timeout=0.25)
-    time.sleep(1.0)
+
+    # Prevent auto-reset on many Arduino-class boards (optional but recommended).
+    # If your board misbehaves with these, comment them out.
+    try:
+        ser.dtr = False
+        ser.rts = False
+    except Exception:
+        pass
+
+    time.sleep(0.2)
+    try:
+        ser.reset_input_buffer()
+    except Exception:
+        pass
+
     return ser
 
 
@@ -83,62 +165,143 @@ def send_line(ser, cmd):
 
 
 def drain(ser, seconds=0.5):
+    """
+    Print incoming lines for a short time window.
+    Returns list of decoded lines.
+    """
+    lines = []
     end = time.time() + seconds
     while time.time() < end:
         line = ser.readline()
-        if line:
-            print("<", line.decode(errors="ignore").strip())
-
-
-# -------------------------------------------------------
-# state.json sync
-# -------------------------------------------------------
-
-def load_state(path):
-    with open(path, "r") as f:
-        return json.load(f)
-
-
-def sync_axes(ser, state_path):
-
-    if not os.path.exists(state_path):
-        print("ERROR: state.json not found:", state_path)
-        return
-
-    try:
-        state = load_state(state_path)
-    except Exception as e:
-        print("ERROR reading state.json:", e)
-        return
-
-    axes = state.get("axes", {})
-
-    for axis in ("a", "b"):
-
-        if axis not in axes:
-            print(f"WARNING: axis '{axis}' not found in state.json")
+        if not line:
             continue
+        txt = line.decode("utf-8", errors="replace").rstrip("\r\n")
+        if txt:
+            print("<", txt)
+            lines.append(txt)
+    return lines
 
-        ax = axes[axis]
 
-        pos = ax.get("pos", 0)
-        mx = ax.get("max", 0)
-        valid = ax.get("valid", 0)
+def get_status(ser, read_s=0.7):
+    send_line(ser, "status")
+    lines = drain(ser, read_s)
+    rec = parse_status_lines(lines)
 
-        cmd = f"setaxis {axis} {pos} {mx} {valid}"
+    # Basic sanity: must have boot_id/seq and at least one axis parsed
+    if rec["boot_id"] is None or rec["seq"] is None or not rec["axes"]:
+        raise RuntimeError(
+            "Failed to parse status output (boot_id/seq/axes missing). "
+            "Try increasing read window or check firmware output formatting."
+        )
+    return rec
 
-        print(">", cmd)
 
-        send_line(ser, cmd)
-        drain(ser, 0.3)
+# -------------------------------------------------------
+# JSON helpers
+# -------------------------------------------------------
+
+def load_json(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+
+def save_json(path, obj):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2, sort_keys=True)
+    print(f"Saved state to {path}")
+
+
+def coerce_int(v, default=0):
+    try:
+        if v is None:
+            return default
+        if isinstance(v, bool):
+            return int(v)
+        if isinstance(v, (int, float)):
+            return int(v)
+        return int(float(str(v).strip()))
+    except Exception:
+        return default
 
 
 # -------------------------------------------------------
 # Multi-command support
 # -------------------------------------------------------
 
-def split_multi_cmd(cmd):
-    return [c.strip() for c in re.split(r'[:;|]', cmd) if c.strip()]
+def split_multi_cmd(line):
+    # separators: :, ;, |
+    return [c.strip() for c in re.split(r"[:;|]", line) if c.strip()]
+
+
+# -------------------------------------------------------
+# Local commands: save / sync
+# -------------------------------------------------------
+
+def cmd_save(ser, state_path):
+    st = get_status(ser)
+    save_json(state_path, st)
+
+
+def cmd_sync(ser, state_path):
+    saved = load_json(state_path)
+    if not saved:
+        print(f"ERROR: no saved state found at {state_path}. Run 'save' first.")
+        return
+
+    # Always read current status to get current boot_id
+    try:
+        cur = get_status(ser)
+    except Exception as e:
+        print(f"ERROR: could not read/parse current status: {e}")
+        return
+
+    saved_boot = saved.get("boot_id", None)
+    cur_boot = cur.get("boot_id", None)
+
+    if saved_boot is None or cur_boot is None:
+        print("ERROR: missing boot_id in saved or current status; cannot decide sync policy safely.")
+        return
+
+    if int(saved_boot) == int(cur_boot):
+        print(f"SYNC: boot_id matches ({cur_boot}). Skipping setaxis restore.")
+        return
+
+    print(f"SYNC: boot_id changed (saved {saved_boot} -> now {cur_boot}). Restoring axes via setaxis...")
+
+    axes = saved.get("axes", {})
+    cmds = []
+    for axis in ("a", "b"):
+        if axis not in axes:
+            print(f"WARNING: axis '{axis}' missing in state.json; skipping")
+            continue
+
+        ax = axes[axis]
+        pos = coerce_int(ax.get("pos"), 0)
+        mx = coerce_int(ax.get("max"), 0)
+        valid = coerce_int(ax.get("valid"), 0)
+        if valid not in (0, 1):
+            valid = 0
+
+        cmds.append(f"setaxis {axis} {pos} {mx} {valid}")
+
+    if not cmds:
+        print("ERROR: no setaxis commands generated from saved state.")
+        return
+
+    for c in cmds:
+        print(">", c)
+        send_line(ser, c)
+        drain(ser, 0.35)
+
+    # Optional: save fresh status after restore (recommended)
+    try:
+        st2 = get_status(ser)
+        save_json(state_path, st2)
+    except Exception as e:
+        print(f"WARNING: restore done, but failed to re-read/save status: {e}")
 
 
 # -------------------------------------------------------
@@ -146,14 +309,12 @@ def split_multi_cmd(cmd):
 # -------------------------------------------------------
 
 def repl(ser, state_path):
-
-    drain(ser, 0.8)
+    drain(ser, 0.8)  # show banner/chatter
 
     print("\nInteractive serial interface")
     print("Type 'help' for commands\n")
 
     while True:
-
         try:
             line = input("cmd> ").strip()
         except (EOFError, KeyboardInterrupt):
@@ -168,20 +329,24 @@ def repl(ser, state_path):
         if low in ("quit", "exit"):
             break
 
-        if low == "help":
+        if low in ("help", "?"):
             print(HELP_TEXT)
             continue
 
-        if low == "sync":
-            sync_axes(ser, state_path)
+        if low == "save":
+            cmd_save(ser, state_path)
             continue
 
-        cmds = split_multi_cmd(line)
+        if low == "sync":
+            cmd_sync(ser, state_path)
+            continue
 
+        # raw passthrough, with chaining support
+        cmds = split_multi_cmd(line)
         for c in cmds:
             print(">", c)
             send_line(ser, c)
-            drain(ser, 0.35)
+            drain(ser, 0.6)
 
 
 # -------------------------------------------------------
@@ -189,30 +354,16 @@ def repl(ser, state_path):
 # -------------------------------------------------------
 
 def main():
-
     parser = argparse.ArgumentParser(
-        description="Minimal serial command interface for Arduino motion controller",
+        description="Minimal serial command interface (raw passthrough + save/sync state.json).",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=HELP_TEXT
     )
 
-    parser.add_argument(
-        "port",
-        help="Serial port (example: /dev/ttyACM0 or COM5)"
-    )
-
-    parser.add_argument(
-        "--baud",
-        type=int,
-        default=DEFAULT_BAUD,
-        help="Serial baud rate (default 115200)"
-    )
-
-    parser.add_argument(
-        "--sync",
-        action="store_true",
-        help="Send setaxis commands from state.json and exit"
-    )
+    parser.add_argument("port", help="Serial port (e.g. /dev/ttyACM0 or COM5)")
+    parser.add_argument("--baud", type=int, default=DEFAULT_BAUD, help="Baud rate (default: 115200)")
+    parser.add_argument("--sync", action="store_true", help="Run sync once and exit")
+    parser.add_argument("--save", action="store_true", help="Run save once and exit (query status -> write state.json)")
 
     args = parser.parse_args()
 
@@ -222,17 +373,20 @@ def main():
     try:
         ser = open_port(args.port, args.baud)
     except Exception as e:
-        print(f"ERROR opening serial port {args.port}: {e}")
-        sys.exit(1)
+        print(f"ERROR opening serial port {args.port}: {e}", file=sys.stderr)
+        print("Tip (Linux): add user to dialout group, then log out/in:", file=sys.stderr)
+        print("  sudo usermod -aG dialout $USER", file=sys.stderr)
+        return 1
 
     try:
-
+        if args.save:
+            cmd_save(ser, state_path)
+            return 0
         if args.sync:
-            sync_axes(ser, state_path)
-            return
-
+            cmd_sync(ser, state_path)
+            return 0
         repl(ser, state_path)
-
+        return 0
     finally:
         try:
             ser.close()
@@ -241,4 +395,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
