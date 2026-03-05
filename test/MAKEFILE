@@ -1,0 +1,19 @@
+CC      := gcc
+CFLAGS  := -O2 -Wall -Wextra -std=c11
+LDFLAGS :=
+
+TARGET  := arduino_motion_cli
+SRC     := arduino_motion_cli.c
+
+JSONC_CFLAGS := $(shell pkg-config --cflags json-c)
+JSONC_LIBS   := $(shell pkg-config --libs json-c)
+
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) $(JSONC_CFLAGS) -o $@ $^ $(LDFLAGS) $(JSONC_LIBS)
+
+clean:
+	rm -f $(TARGET)
+
+.PHONY: all clean

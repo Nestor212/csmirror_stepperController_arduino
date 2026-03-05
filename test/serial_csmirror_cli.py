@@ -139,7 +139,41 @@ def parse_status_lines(lines):
 # -------------------------------------------------------
 
 def disable_hupcl(path: str):
-    # Clear HUPCL so the kernel won't drop DTR on last close ("hang up")
+    """
+    Disable the Linux HUPCL (Hang Up On Close) flag for a serial device.
+
+    Why this exists
+    ----------------
+    Arduino Uno boards automatically reset whenever the DTR signal on the
+    USB serial interface transitions from HIGH -> LOW.
+
+    On Linux, when the last process closes a serial port the kernel normally
+    performs a "hangup" operation which drops the DTR line.  This behavior is
+    controlled by the HUPCL termios flag.
+
+    For Arduino devices this causes an unwanted reset every time a program
+    connects to or disconnects from the port.
+
+    Clearing HUPCL prevents the kernel from toggling DTR on close, which
+    allows software to reconnect to the device without resetting it.
+
+    This is especially important for control systems where reconnecting to
+    the device must not interrupt the running firmware.
+
+    Side effects
+    ------------
+    • The Arduino will no longer automatically reset when the port closes.
+    • Tools that rely on the reset pulse (e.g. Arduino IDE uploads) may need
+      HUPCL temporarily re-enabled.
+    • If a program crashes, the Arduino will continue running instead of
+      resetting.
+
+    References
+    ----------
+    https://stackoverflow.com/questions/2810939
+    https://www.arduino.cc/en/Main/ArduinoBoardUno
+    """
+    
     with open(path, "rb", buffering=0) as f:
         attrs = termios.tcgetattr(f.fileno())
         attrs[2] = attrs[2] & ~termios.HUPCL
