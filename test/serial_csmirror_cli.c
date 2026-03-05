@@ -453,7 +453,7 @@ static json_object *status_to_json(const StatusRec *st) {
 }
 
 static int write_json_file(const char *path, json_object *obj) {
-  const char *txt = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SORTED);
+  const char *txt = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY);
   FILE *f = fopen(path, "w");
   if (!f) return -1;
   if (fputs(txt, f) < 0) { fclose(f); return -1; }
