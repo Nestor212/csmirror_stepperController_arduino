@@ -466,7 +466,7 @@ static int get_status(int fd, StatusRec *out) {
   free(lines);
 
   bool have_axis = out->a.present || out->b.present;
-  if (out->boot_id < 0 || out->seq < 0 || !have_axis) {
+  if (!have_axis) {
     errno = EPROTO;
     return -1;
   }
