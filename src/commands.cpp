@@ -114,7 +114,9 @@ static CmdClass classify_cmd(const char* action)
       streq(action, "disable_limits") ||
       streq(action, "enable_all") || streq(action, "enableall") ||
       streq(action, "disable_all") || streq(action, "disableall") ||
-      streq(action, "stop_all") || streq(action, "stopall")) {
+      streq(action, "stop_all") || streq(action, "stopall") ||
+      streq(action, "reset") ||
+      streq(action, "reboot")) {
     return CmdClass::GLOBAL;
   }
 
@@ -476,7 +478,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
     if (streq(action, "enable_all") || streq(action, "enableall"))  { cmd_enableall(tiptilt, azimuth);  bumpSeq(sys); return; }
     if (streq(action, "disable_all") || streq(action, "disableall")){ cmd_disableall(tiptilt, azimuth); bumpSeq(sys); return; }
     if (streq(action, "stop_all") || streq(action, "stopall"))      { cmd_stopall(tiptilt, azimuth);    bumpSeq(sys); return; }
-    if (streq(action, "reset")) { Serial.println(F("Resetting controller.")); delay(50); wdt_enable(WDTO_15MS); while (1) {}  }
+    if (streq(action, "reset") || streq(action, "reboot")) { Serial.println(F("Resetting controller.")); delay(50); wdt_enable(WDTO_15MS); while (1) {}  }
 
     Serial.print(F("ERR:Unhandled global command: "));
     Serial.println(action);
