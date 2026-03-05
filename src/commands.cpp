@@ -287,6 +287,14 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   // move <axis> <dir> <steps> [speed] [accel]
   if (!ax) { Serial.println(F("ERR")); return; }
 
+  //check if position is valid (homed) before allowing move or moveto
+  if (!ax->posValid) {
+    Serial.print(F("ERR:Motor "));
+    Serial.print((char)toupper(axis_id));
+    Serial.println(F(" position invalid. Home or sync state first."));
+    return;
+  }
+
   if (ntok < 4) {
     Serial.println(F("ERR:Invalid MOVE command format."));
     Serial.println(F("Expected: move <axis> <dir> <steps> [speed] [accel]"));
@@ -352,8 +360,11 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   // moveto <axis> <pos> [speed] [accel]
   if (!ax) { Serial.println(F("ERR")); return; }
 
+  //check if position is valid (homed) before allowing move or moveto
   if (!ax->posValid) {
-    Serial.println(F("ERR:Position unknown (not homed). Home first."));
+    Serial.print(F("ERR:Motor "));
+    Serial.print((char)toupper(axis_id));
+    Serial.println(F(" position invalid. Home or sync state first."));
     return;
   }
 
