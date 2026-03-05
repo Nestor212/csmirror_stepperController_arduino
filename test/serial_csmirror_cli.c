@@ -58,6 +58,8 @@
 
 #define DEFAULT_BAUD 115200
 
+#define STATE_FILE "/home/oper/projects/csmirror_stepperController_arduino/test/state.json"
+
 // ------------------------------
 // Help text
 // ------------------------------
@@ -881,13 +883,7 @@ int main(int argc, char **argv) {
     exe_dir[sizeof(exe_dir)-1] = '\0';
   }
 
-  char state_path[PATH_MAX];
-  // Avoid GCC "may be truncated" warnings by checking snprintf result.
-  int n = snprintf(state_path, sizeof(state_path), "%s/state.json", exe_dir);
-  if (n < 0 || (size_t)n >= sizeof(state_path)) {
-    strncpy(state_path, "./state.json", sizeof(state_path) - 1);
-    state_path[sizeof(state_path) - 1] = '\0';
-  }
+  char state_path[] = STATE_FILE;
 
   // One-shot modes vs interactive REPL
   if (one_save) {
