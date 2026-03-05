@@ -378,7 +378,7 @@ typedef struct {
   AxisState b;
 } StatusRec;
 
-static bool find_int_after(const char *line, const char *key, int *out) {
+static bool find_int_after(const char *line, const char *key, uint32_t *out) {
   const char *p = strstr(line, key);
   if (!p) return false;
   p += strlen(key);
@@ -386,7 +386,7 @@ static bool find_int_after(const char *line, const char *key, int *out) {
   char *end = NULL;
   long v = strtol(p, &end, 10);
   if (end == p) return false;
-  *out = (int)v;
+  *out = (uint32_t)v;
   return true;
 }
 
