@@ -389,8 +389,6 @@ void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, 
     Serial.print(ax.stepper.targetPosition());
     Serial.print(F(" max="));
     Serial.print(ax.maxPos);
-    Serial.print(F(" valid="));
-    Serial.print(ax.posValid ? 1 : 0);
     Serial.print(F(" lo="));
     Serial.print(limitTriggered(ax.limLoPin) ? 1 : 0);
     Serial.print(F(" hi="));
