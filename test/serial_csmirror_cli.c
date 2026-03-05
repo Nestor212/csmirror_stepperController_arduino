@@ -1,5 +1,5 @@
-// arduino_motion_cli.c
-// Build: gcc -O2 -Wall -Wextra -std=c11 arduino_motion_cli.c -o arduino_motion_cli $(pkg-config --cflags --libs json-c)
+// serial_csmirror_cli.c
+// Build: gcc -O2 -Wall -Wextra -std=c11 serial_csmirror_cli.c -o serial_csmirror_cli $(pkg-config --cflags --libs json-c)
 //
 // Features:
 //  - Raw passthrough REPL to Arduino over serial
