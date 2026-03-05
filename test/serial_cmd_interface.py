@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import time
+import termios
 
 import serial
 
@@ -137,18 +138,33 @@ def parse_status_lines(lines):
 # Serial helpers
 # -------------------------------------------------------
 
+def disable_hupcl(path: str):
+    # Clear HUPCL so the kernel won't drop DTR on last close ("hang up")
+    with open(path, "rb", buffering=0) as f:
+        attrs = termios.tcgetattr(f.fileno())
+        attrs[2] = attrs[2] & ~termios.HUPCL
+        termios.tcsetattr(f.fileno(), termios.TCSAFLUSH, attrs)
+
 def open_port(port, baud):
-    ser = serial.Serial()
-    ser.port = port
-    ser.baudrate = baud
-    ser.timeout = 0.25
+    disable_hupcl(port)
 
-    # Pre-set line states BEFORE opening (helps on some platforms)
-    ser.dtr = False
-    ser.rts = False
+    ser = serial.Serial(
+        port=port,
+        baudrate=baud,
+        timeout=0.25,
+        write_timeout=0.25,
+        rtscts=False,
+        dsrdtr=False,
+    )
 
-    ser.open()
-    time.sleep(0.2)
+    # Keep DTR stable/high (avoid falling-edge resets later)
+    try:
+        ser.setDTR(True)
+        ser.setRTS(False)
+    except Exception:
+        pass
+
+    time.sleep(0.05)
     ser.reset_input_buffer()
     return ser
 
