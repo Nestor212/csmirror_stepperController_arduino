@@ -378,13 +378,25 @@ typedef struct {
   AxisState b;
 } StatusRec;
 
-static bool find_int_after(const char *line, const char *key, uint32_t *out) {
+static bool find_int_after(const char *line, const char *key, int *out) {
   const char *p = strstr(line, key);
   if (!p) return false;
   p += strlen(key);
   while (*p == ' ' || *p == '\t') p++;
   char *end = NULL;
   long v = strtol(p, &end, 10);
+  if (end == p) return false;
+  *out = (int)v;
+  return true;
+}
+
+static bool find_uint32_after(const char *line, const char *key, uint32_t *out) {
+  const char *p = strstr(line, key);
+  if (!p) return false;
+  p += strlen(key);
+  while (*p == ' ' || *p == '\t') p++;
+  char *end = NULL;
+  unsigned long v = strtoul(p, &end, 10);
   if (end == p) return false;
   *out = (uint32_t)v;
   return true;
@@ -403,8 +415,8 @@ static bool find_axis_id(const char *line, char *axis_out) {
 
 static void parse_status_line(StatusRec *rec, const char *line) {
   // Global fields can appear on any line; harmless to try each time.
-  (void)find_int_after(line, "boot_id=", &rec->boot_id);
-  (void)find_int_after(line, "seq=", &rec->seq);
+  (void)find_uint32_after(line, "boot_id=", &rec->boot_id);
+  (void)find_uint32_after(line, "seq=", &rec->seq);
   (void)find_int_after(line, "limitsEnabled=", &rec->limitsEnabled);
 
   char axis = 0;
