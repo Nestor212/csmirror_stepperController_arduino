@@ -140,15 +140,13 @@ def parse_status_lines(lines):
 def open_port(port, baud):
     ser = serial.Serial(port, baud, timeout=0.25)
 
-    # Small delay so the USB serial interface settles
+    # Prevent the common "DTR pulse causes reset" on Arduino Uno.
+    # Keep DTR low (False). Do this immediately after opening.
+    ser.setDTR(False)
+    ser.setRTS(False)
+
     time.sleep(0.2)
-
-    # Clear any startup chatter
-    try:
-        ser.reset_input_buffer()
-    except Exception:
-        pass
-
+    ser.reset_input_buffer()
     return ser
 
 
