@@ -612,21 +612,14 @@ static void cmd_sync(int fd, const char *state_path) {
     json_object_put(saved);
     return;
   }
-  int cur_boot = cur.boot_id;
-
-  if (saved_boot < 0 || cur_boot < 0) {
-    printf("ERROR: missing boot_id in saved or current status.\n");
-    json_object_put(saved);
-    return;
-  }
 
   if (saved_boot == cur_boot) {
-    printf("SYNC: boot_id matches (%d). Skipping setaxis restore.\n", cur_boot);
+    printf("SYNC: boot_id matches (%u). Skipping setaxis restore.\n", cur_boot);
     json_object_put(saved);
     return;
   }
 
-  printf("SYNC: boot_id changed (saved %d -> now %d). Restoring axes via setaxis...\n",
+  printf("SYNC: boot_id changed (saved %u -> now %u). Restoring axes via setaxis...\n",
          saved_boot, cur_boot);
 
   json_object *axes = NULL;
