@@ -58,7 +58,7 @@
 
 #define DEFAULT_BAUD 115200
 
-#define STATE_FILE "/home/oper/projects/csmirror_stepperController_arduino/test/state.json"
+#define STATE_FILE_NAME "state.json"
 
 // ------------------------------
 // Help text
@@ -889,7 +889,8 @@ int main(int argc, char **argv) {
     exe_dir[sizeof(exe_dir)-1] = '\0';
   }
 
-  char state_path[] = STATE_FILE;
+  char state_path[PATH_MAX];
+  snprintf(state_path, sizeof(state_path), "%s/%s", exe_dir, STATE_FILE_NAME);
 
   // One-shot modes vs interactive REPL
   if (one_save) {
