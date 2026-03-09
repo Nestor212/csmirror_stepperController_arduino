@@ -4,8 +4,8 @@
 #include "limits.h"
 #include "system_state.h"
 
-// Print system status (same as your original)
+// Print system status
 void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth);
 
-// Handle one command line (lowercased + trimmed inside)
+// Handle one command line
 void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis& azimuth);

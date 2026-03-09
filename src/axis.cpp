@@ -19,4 +19,6 @@ void stopAxis(Axis& ax)
 {
   // AccelStepper stop() decelerates; also cancel target so it won't resume toward the limit.
   ax.stepper.stop();
+  //Disable motor so it stops immediately
+  setEnable(ax, false);
 }

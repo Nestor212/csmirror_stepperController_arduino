@@ -4,10 +4,10 @@
 // -------------------- LIMITS MODE --------------------
 // enable/disable bounds + photodetector enforcement
 static const uint32_t LIMITS_TIMEOUT_MS = 60000; // 60s safety re-enable (set 0 to disable timer)
+constexpr uint32_t HOME_TIMEOUT_MS = 60000; // 60s homing timeout (set 0 to disable)
 
 // -------------------- DRIVER SETTINGS --------------------
-static const bool TB6600_ENABLE_ACTIVE_LOW = true; // ENA asserted when LOW (common)
-static const bool LIMIT_ACTIVE_LOW = true;         // using INPUT_PULLUP => triggered=LOW
+static const bool TB6600_ENABLE_ACTIVE_LOW = true; // ENA asserted when LOW
 
 // Homing profile
 static const float HOME_FAST_SPEED = 1000.0f;      // steps/sec (tune)

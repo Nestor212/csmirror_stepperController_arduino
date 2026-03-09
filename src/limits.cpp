@@ -4,8 +4,7 @@
 
 bool limitTriggered(uint8_t pin)
 {
-  int v = digitalRead(pin);
-  return LIMIT_ACTIVE_LOW ? (v == LOW) : (v == HIGH);
+  return digitalRead(pin) == HIGH;
 }
 
 void updateLimitBlocks(Axis& ax, const LimitsState& lim)

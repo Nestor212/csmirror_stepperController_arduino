@@ -9,8 +9,8 @@
 #include "system_state.h"
 
 // Axis instances
-Axis tiptilt(MOTOR_A_STEP, MOTOR_A_DIR, MOTOR_A_EN, PHOTODETECTOR_A1, PHOTODETECTOR_A2);
-Axis azimuth(MOTOR_B_STEP, MOTOR_B_DIR, MOTOR_B_EN, PHOTODETECTOR_B1, PHOTODETECTOR_B2);
+Axis tiptilt(MOTOR_A_STEP, MOTOR_A_DIR, MOTOR_A_EN, LIM_MIN_A, LIM_MAX_A);
+Axis azimuth(MOTOR_B_STEP, MOTOR_B_DIR, MOTOR_B_EN, LIM_MIN_B, LIM_MAX_B);
 
 SystemState sys;   // NEW
 
@@ -41,8 +41,8 @@ void setup()
   azimuth.stepper.setAcceleration(100);
 
   // Helps TB6600 clones that need wider STEP pulses
-  tiptilt.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
-  azimuth.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
+  // tiptilt.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
+  // azimuth.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
 
   systemStateInit(sys); // NEW
 

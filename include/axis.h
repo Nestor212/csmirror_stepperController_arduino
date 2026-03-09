@@ -29,10 +29,11 @@ struct Axis {
   uint8_t limHiPin;
 
   HomeState hs = HomeState::IDLE;
+  uint32_t homeStartMs;
   bool enabled = false;
   bool homed = false;
   bool posValid = false;
-
+  
   long maxPos = 0;
   uint32_t t_ms = 0;
 
