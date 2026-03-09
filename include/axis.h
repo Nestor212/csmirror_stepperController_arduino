@@ -37,6 +37,9 @@ struct Axis {
   long maxPos = 0;
   uint32_t t_ms = 0;
 
+  float accel;
+  bool cmd_stopRequested = false; // for cooperative stop (vs hard stop from limits)
+
   // Direction block based on active photodetectors (when limits enabled)
   //  0 = none
   // -1 = lower active -> block negative direction
@@ -57,3 +60,5 @@ void setEnable(Axis& ax, bool on);
 
 // Stop axis immediately (cancel target)
 void stopAxis(Axis& ax);
+
+void emergencyStopAxis(Axis& ax);

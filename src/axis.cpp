@@ -17,8 +17,22 @@ void setEnable(Axis& ax, bool on)
 
 void stopAxis(Axis& ax)
 {
-  // AccelStepper stop() decelerates; also cancel target so it won't resume toward the limit.
-  ax.stepper.stop();
-  //Disable motor so it stops immediately
+  ax.cmd_stopRequested = true; // for cooperative stop in loop() vs hard stop from limits
+  ax.stepper.setAcceleration(2000);   // choose a much higher safe value
+  ax.stepper.stop();                  // decelerate quickly
+}
+
+void emergencyStopAxis(Axis& ax)
+{
+  // Cancel any motion intent in the stepper object
+  long pos = ax.stepper.currentPosition();
+  ax.stepper.setCurrentPosition(pos);   // target = current, speed = 0
+
+  // Position may no longer be trustworthy after torque is removed
+  // Enforce re-homing required before allowing moves again
+  ax.posValid = false;
+  ax.homed = false; 
+
+  // Finally remove motor torque
   setEnable(ax, false);
 }

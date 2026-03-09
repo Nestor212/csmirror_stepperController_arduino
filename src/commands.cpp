@@ -114,7 +114,8 @@ static CmdClass classify_cmd(const char* action)
       streq(action, "disable_limits") ||
       streq(action, "enable_all") || streq(action, "enableall") ||
       streq(action, "disable_all") || streq(action, "disableall") ||
-      streq(action, "stop_all") || streq(action, "stopall") ||
+      streq(action, "stop_all") || streq(action, "stopall") || streq(action, "stop") ||
+      streq(action, "estop") ||
       streq(action, "reset") ||
       streq(action, "reboot")) {
     return CmdClass::GLOBAL;
@@ -174,6 +175,13 @@ static void cmd_stopall(Axis& tiptilt, Axis& azimuth)
   stopAxis(tiptilt);
   stopAxis(azimuth);
   Serial.println("All motors stopped.");
+}
+
+static void cmd_estop(Axis& tiptilt, Axis& azimuth)
+{
+  emergencyStopAxis(tiptilt);
+  emergencyStopAxis(azimuth);
+  Serial.println("All motors emergency stopped & disabled.");
 }
 
 static void cmd_enable_axis(Axis* ax, char axis_id)
@@ -336,6 +344,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   // keep your behavior: accel < 1 => huge accel (effectively constant speed)
   if (accel < 1.0f) accel = 1000000.0f;
   ax->stepper.setAcceleration(accel);
+  ax->accel = accel;
 
   long cur = ax->stepper.currentPosition();
   long delta = (dir == 0) ? -steps : +steps;
@@ -402,6 +411,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
 
   if (accel < 1.0f) accel = 1000000.0f;
   ax->stepper.setAcceleration(accel);
+  ax->accel = accel;
 
   updateLimitBlocks(*ax, lim);
   TargetBlockInfo bi;
@@ -481,14 +491,15 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   }
 
   // ---- global ----
-  if (c == CmdClass::GLOBAL) {
+  if (c == CmdClass::GLOBAL && ntok == 1) {
     if (streq(action, "status")) { printStatus(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "enable_limits"))  { cmd_enable_limits(lim); bumpSeq(sys); return; }
     if (streq(action, "disable_limits")) { cmd_disable_limits(lim); bumpSeq(sys); return; }
 
     if (streq(action, "enable_all") || streq(action, "enableall"))  { cmd_enableall(tiptilt, azimuth);  bumpSeq(sys); return; }
     if (streq(action, "disable_all") || streq(action, "disableall")){ cmd_disableall(tiptilt, azimuth); bumpSeq(sys); return; }
-    if (streq(action, "stop_all") || streq(action, "stopall"))      { cmd_stopall(tiptilt, azimuth);    bumpSeq(sys); return; }
+    if (streq(action, "stop_all") || streq(action, "stopall") || streq(action, "stop"))      { cmd_stopall(tiptilt, azimuth);    bumpSeq(sys); return; }
+    if (streq(action, "estop")) { cmd_estop(tiptilt, azimuth);    bumpSeq(sys); return; }
     if (streq(action, "reset") || streq(action, "reboot")) { Serial.println(F("Resetting controller.")); delay(50); wdt_enable(WDTO_15MS); while (1) {}  }
 
     Serial.print(F("ERR:Unhandled global command: "));

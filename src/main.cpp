@@ -62,6 +62,18 @@ void loop()
   enforceHardwareStops(tiptilt, lim);
   enforceHardwareStops(azimuth, lim);
 
+  // Check for move completion after a stop request and restore accel if so.
+  if (!tiptilt.stepper.isRunning() && tiptilt.cmd_stopRequested) 
+  {
+      tiptilt.stepper.setAcceleration(tiptilt.accel);
+      tiptilt.cmd_stopRequested = false;
+  }
+  if(!azimuth.stepper.isRunning() && azimuth.cmd_stopRequested) 
+  {
+      azimuth.stepper.setAcceleration(azimuth.accel);
+      azimuth.cmd_stopRequested = false;
+  }
+
   // Run motion / homing (same logic as your original)
   if (tiptilt.hs == HomeState::IDLE || tiptilt.hs == HomeState::DONE || tiptilt.hs == HomeState::ERROR)
     tiptilt.stepper.run();
