@@ -273,6 +273,7 @@ static void cmd_set_axis(SystemState& sys, Axis* ax, char axis_id, int ntok, cha
 
   if (valid == 1) {
     ax->homed = true;
+    ax->hs = HomeState::DONE;
   }
 
   // bump system sequence so Pi knows something changed
