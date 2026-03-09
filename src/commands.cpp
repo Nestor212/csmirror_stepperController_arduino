@@ -296,7 +296,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   if (!ax) { Serial.println(F("ERR")); return; }
 
   //check if position is valid (homed) before allowing move or moveto
-  if (!ax->posValid) {
+  if (!ax->posValid || !ax->homed) {
     Serial.print(F("ERR:Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" position invalid. Home or sync state first."));
@@ -370,21 +370,24 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   if (!ax) { Serial.println(F("ERR")); return; }
 
   //check if position is valid (homed) before allowing move or moveto
-  if (!ax->posValid) {
+  if (!ax->posValid || !ax->homed) 
+  {
     Serial.print(F("ERR:Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" position invalid. Home or sync state first."));
     return;
   }
 
-  if (ntok < 3) {
+  if (ntok < 3) 
+  {
     Serial.println(F("ERR:Invalid MOVETO command format."));
     Serial.println(F("Expected: moveto <axis> <pos> [speed] [accel]"));
     return;
   }
 
   long pos = 0;
-  if (!parse_long(tok[2], pos)) {
+  if (!parse_long(tok[2], pos)) 
+  {
     Serial.println(F("ERR:Invalid position."));
     return;
   }
@@ -392,30 +395,46 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   float speed = ax->stepper.maxSpeed();
   float accel = 0.0f;
 
-  if (ntok >= 4) {
-    if (!parse_float(tok[3], speed)) { Serial.println(F("ERR:Invalid speed.")); return; }
+  if (ntok >= 4) 
+  {
+    if (!parse_float(tok[3], speed)) 
+    { 
+      Serial.println(F("ERR:Invalid speed.")); return; 
+    }
   }
-  if (ntok >= 5) {
-    if (!parse_float(tok[4], accel)) { Serial.println(F("ERR:Invalid accel.")); return; }
+  if (ntok >= 5) 
+  {
+    if (!parse_float(tok[4], accel)) 
+    { 
+      Serial.println(F("ERR:Invalid accel.")); return; 
+    }
   }
 
-  if (!ax->enabled) {
+  if (!ax->enabled) 
+  {
     Serial.print(F("ERR:Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" is disabled."));
     return;
   }
 
-  if (speed < 1.0f) speed = 1.0f;
+  if (speed < 1.0f) 
+  {
+    speed = 1.0f;
+  }
   ax->stepper.setMaxSpeed(speed);
 
-  if (accel < 1.0f) accel = 1000000.0f;
+  if (accel < 1.0f) 
+  {
+    accel = 1000000.0f;
+  }
   ax->stepper.setAcceleration(accel);
   ax->accel = accel;
 
   updateLimitBlocks(*ax, lim);
   TargetBlockInfo bi;
-  if (!allowTarget(*ax, lim, pos, &bi)) {
+  if (!allowTarget(*ax, lim, pos, &bi)) 
+  {
     printMoveBlocked(axis_id, bi);
     return;
   }
@@ -436,7 +455,8 @@ void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, 
   Serial.print(F("limitsEnabled="));
   Serial.println(lim.enabled ? 1 : 0);
 
-  auto printAx = [](const char* name, char axis_id, Axis& ax) {
+  auto printAx = [](const char* name, char axis_id, Axis& ax) 
+  {
     Serial.print(name);
     Serial.print(F(" id="));
     Serial.print(axis_id);
@@ -491,7 +511,8 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   }
 
   // ---- global ----
-  if (c == CmdClass::GLOBAL && ntok == 1) {
+  if (c == CmdClass::GLOBAL && ntok == 1) 
+  {
     if (streq(action, "status")) { printStatus(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "enable_limits"))  { cmd_enable_limits(lim); bumpSeq(sys); return; }
     if (streq(action, "disable_limits")) { cmd_disable_limits(lim); bumpSeq(sys); return; }
@@ -508,7 +529,8 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   }
 
   // ---- axis ----
-  if (ntok < 2 || !tok[1] || !tok[1][0]) {
+  if (ntok < 2 || !tok[1] || !tok[1][0]) 
+  {
     Serial.print(F("ERR:Axis required (a/b) for command: "));
     Serial.println(action);
     return;
@@ -516,7 +538,8 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
 
   char axis_id = tok[1][0];
   Axis* ax = axisFromId(axis_id, tiptilt, azimuth);
-  if (!ax) {
+  if (!ax) 
+  {
     Serial.println(F("ERR:Invalid axis (use a or b)."));
     return;
   }

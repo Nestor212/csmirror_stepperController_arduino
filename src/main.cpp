@@ -76,18 +76,12 @@ void loop()
 
   // Run motion / homing (same logic as your original)
   if ((tiptilt.hs == HomeState::IDLE || tiptilt.hs == HomeState::DONE || tiptilt.hs == HomeState::ERROR))
-      if (tiptilt.homed)
-        tiptilt.stepper.run();
-      else
-        Serial.println("Warning: Tip/Tilt not homed. Please home or sync state before moving.");
+    tiptilt.stepper.run();
   else 
     updateHoming(tiptilt);
 
   if ((azimuth.hs == HomeState::IDLE || azimuth.hs == HomeState::DONE || azimuth.hs == HomeState::ERROR))
-    if (azimuth.homed)
-      azimuth.stepper.run();
-    else
-      Serial.println("Warning: Azimuth not homed. Please home or sync state before moving.");
+    azimuth.stepper.run();
   else
     updateHoming(azimuth);
 
