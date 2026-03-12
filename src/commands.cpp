@@ -393,6 +393,8 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
     Serial.println(F("ERR:Invalid position."));
     return;
   }
+  Serial.print("Parsed position: ");
+  Serial.println(pos);
 
   float speed = ax->stepper.maxSpeed();
   float accel = 0.0f;
