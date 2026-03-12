@@ -16,7 +16,7 @@ void startHoming(Axis& ax)
   ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
 
   // Start by seeking lower limit (negative direction assumed)
-  ax.stepper.moveTo(-BIG_TRAVEL);
+  ax.stepper.moveTo(long(-BIG_TRAVEL));
   ax.hs = HomeState::SEEK_LOWER_FAST;
 }
 
@@ -57,7 +57,7 @@ void updateHoming(Axis& ax)
 
         ax.hs = HomeState::BACKOFF_FROM_LOWER;
         ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
-        ax.stepper.move(BACKOFF_STEPS);
+        ax.stepper.move(long(BACKOFF_STEPS));
       }
       return;
     }
@@ -68,7 +68,7 @@ void updateHoming(Axis& ax)
       if (!(ax.stepper.distanceToGo() == 0)) return;
 
       ax.hs = HomeState::SEEK_LOWER_SLOW;
-      ax.stepper.move(-BIG_TRAVEL);
+      ax.stepper.move(long(-BIG_TRAVEL));
       return;
     }
 
@@ -81,7 +81,7 @@ void updateHoming(Axis& ax)
         delay(100);
 
         ax.hs = HomeState::CLEAR_LOWER_FINAL;
-        ax.stepper.move(FINAL_CLEAR_STEPS);
+        ax.stepper.move(long(FINAL_CLEAR_STEPS));
       }
       return;
     }
@@ -104,7 +104,7 @@ void updateHoming(Axis& ax)
       ax.hs = HomeState::SEEK_UPPER_FAST;
       ax.stepper.setAcceleration(HOME_ACCEL);
       ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
-      ax.stepper.moveTo(+BIG_TRAVEL);
+      ax.stepper.moveTo(long(+BIG_TRAVEL));
       delay(2000);
 
       return;
@@ -121,7 +121,7 @@ void updateHoming(Axis& ax)
         
         ax.hs = HomeState::BACKOFF_FROM_UPPER;
         ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
-        ax.stepper.move(-BACKOFF_STEPS);
+        ax.stepper.move(long(-BACKOFF_STEPS));
       }
       return;
     }
@@ -132,7 +132,7 @@ void updateHoming(Axis& ax)
       if (!(ax.stepper.distanceToGo() == 0)) return;
 
       ax.hs = HomeState::SEEK_UPPER_SLOW;
-      ax.stepper.move(+BIG_TRAVEL);
+      ax.stepper.move(long(+BIG_TRAVEL));
       return;
     }
 
@@ -146,7 +146,7 @@ void updateHoming(Axis& ax)
         ax.t_ms = millis();
 
         ax.hs = HomeState::CLEAR_UPPER_FINAL;
-        ax.stepper.move(-FINAL_CLEAR_STEPS);
+        ax.stepper.move(long(-FINAL_CLEAR_STEPS));
       }
       return;
     }
