@@ -55,49 +55,49 @@ void setup()
 
 void loop()
 {
-  // ---- Housekeeping / safety ----
+  // ---- Global housekeeping ----
   limitsAutoReenableTick(lim);
 
-  updateLimitBlocks(tiptilt, lim);
-  updateLimitBlocks(azimuth, lim);
-
-  enforceHardwareStops(tiptilt, lim);
-  enforceHardwareStops(azimuth, lim);
-
-  // If a commanded stop has fully completed, restore the normal acceleration.
-  if (tiptilt.cmd_stopRequested && !tiptilt.stepper.isRunning())
+  // ---- Tip/Tilt axis service ----
+  if (!(tiptilt.hs == HomeState::IDLE ||
+        tiptilt.hs == HomeState::DONE ||
+        tiptilt.hs == HomeState::ERROR))
   {
-    tiptilt.stepper.setAcceleration(tiptilt.accel);
-    tiptilt.cmd_stopRequested = false;
-  }
-
-  if (azimuth.cmd_stopRequested && !azimuth.stepper.isRunning())
-  {
-    azimuth.stepper.setAcceleration(azimuth.accel);
-    azimuth.cmd_stopRequested = false;
-  }
-
-  // ---- Service motion / homing ----
-  if (tiptilt.hs == HomeState::IDLE ||
-      tiptilt.hs == HomeState::DONE ||
-      tiptilt.hs == HomeState::ERROR)
-  {
-    tiptilt.stepper.run();
-  }
-  else
-  {
+    // Homing owns this axis this iteration.
     updateHoming(tiptilt);
   }
-
-  if (azimuth.hs == HomeState::IDLE ||
-      azimuth.hs == HomeState::DONE ||
-      azimuth.hs == HomeState::ERROR)
+  else
   {
-    azimuth.stepper.run();
+    updateLimitBlocks(tiptilt, lim);
+    enforceHardwareStops(tiptilt, lim);
+
+    if (tiptilt.cmd_stopRequested && !tiptilt.stepper.isRunning())
+    {
+      tiptilt.stepper.setAcceleration(tiptilt.accel);
+      tiptilt.cmd_stopRequested = false;
+    }
+    tiptilt.stepper.run();
+  }
+
+  // ---- Azimuth axis service ----
+  if (!(azimuth.hs == HomeState::IDLE ||
+        azimuth.hs == HomeState::DONE ||
+        azimuth.hs == HomeState::ERROR))
+  {
+    // Homing owns this axis this iteration.
+    updateHoming(azimuth);
   }
   else
   {
-    updateHoming(azimuth);
+    updateLimitBlocks(azimuth, lim);
+    enforceHardwareStops(azimuth, lim);
+
+    if (azimuth.cmd_stopRequested && !azimuth.stepper.isRunning())
+    {
+      azimuth.stepper.setAcceleration(azimuth.accel);
+      azimuth.cmd_stopRequested = false;
+    }
+    azimuth.stepper.run();
   }
 
   // ---- Motion state ----
