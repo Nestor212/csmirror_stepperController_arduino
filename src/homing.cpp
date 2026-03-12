@@ -102,6 +102,7 @@ void updateHoming(Axis& ax)
       ax.stepper.setAcceleration(HOME_ACCEL);
       ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
       ax.stepper.moveTo(+BIG_TRAVEL);
+      delay(1000);
 
       return;
     }
@@ -139,7 +140,7 @@ void updateHoming(Axis& ax)
         ax.stepper.stop();
         ax.t_ms = millis();
 
-        ax.hs = HomeState::CLEAR_LOWER_FINAL;
+        ax.hs = HomeState::CLEAR_UPPER_FINAL;
         ax.stepper.move(-FINAL_CLEAR_STEPS);
       }
       return;
