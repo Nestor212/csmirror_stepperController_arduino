@@ -328,6 +328,12 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
     if (!parse_float(tok[5], accel)) { Serial.println(F("ERR:Invalid accel.")); return; }
   }
 
+  if (speed > MOTOR_MAX_SPEED) 
+  {
+    speed = MOTOR_MAX_SPEED;
+    Serial.println(F("WARN: Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
+  }
+
   if (dir != 0 && dir != 1) {
     Serial.println(F("ERR:dir must be 0 or 1"));
     return;
@@ -410,6 +416,12 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
     { 
       Serial.println(F("ERR:Invalid accel.")); return; 
     }
+  }
+
+  if (speed > MOTOR_MAX_SPEED) 
+  {
+    speed = MOTOR_MAX_SPEED;
+    Serial.println(F("WARN: Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
   }
 
   if (!ax->enabled) 
@@ -497,7 +509,7 @@ void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, 
 void printPosStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
   if (tiptilt.stepper.isRunning() || azimuth.stepper.isRunning()) return;
-  
+
   auto printAx = [](const char* name, char axis_id, Axis& ax) 
   {
     Serial.print(name);

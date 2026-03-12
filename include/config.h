@@ -8,11 +8,12 @@ constexpr uint32_t HOME_TIMEOUT_MS = 120000; // 60s homing timeout (set 0 to dis
 
 // -------------------- DRIVER SETTINGS --------------------
 static const bool TB6600_ENABLE_ACTIVE_LOW = true; // ENA asserted when LOW
+static const float MOTOR_MAX_SPEED = 1500.0f;      // steps/sec (tune)
 
 // Homing profile
-static const float HOME_FAST_SPEED = 3000.0f;      // steps/sec (tune)
+static const float HOME_FAST_SPEED = 1500.0f;      // steps/sec (tune)
 static const float HOME_SLOW_SPEED = 200.0f;       // steps/sec (tune)
-static const float HOME_ACCEL      = 4000.0f;      // steps/sec^2 (tune)
+static const float HOME_ACCEL      = 1500.0f;      // steps/sec^2 (tune)
 
 static const long  BACKOFF_STEPS      = 400;       // back off from switch after hit
 static const long  FINAL_CLEAR_STEPS  = 200;        // move away after final touch

@@ -38,10 +38,10 @@ void setup()
   setEnable(azimuth, false);
 
   // Default motion params (tune)
-  tiptilt.stepper.setMaxSpeed(1000);
+  tiptilt.stepper.setMaxSpeed(MOTOR_MAX_SPEED);
   tiptilt.stepper.setAcceleration(100);
 
-  azimuth.stepper.setMaxSpeed(600);
+  azimuth.stepper.setMaxSpeed(MOTOR_MAX_SPEED);
   azimuth.stepper.setAcceleration(100);
 
   // Helps TB6600 clones that need wider STEP pulses

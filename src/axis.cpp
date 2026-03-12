@@ -18,7 +18,7 @@ void setEnable(Axis& ax, bool on)
 void stopAxis(Axis& ax)
 {
   ax.cmd_stopRequested = true; // for cooperative stop in loop() vs hard stop from limits
-  ax.stepper.setAcceleration(3000);   // choose a much higher safe value
+  ax.stepper.setAcceleration(4000);   // choose a much higher safe value
   ax.stepper.stop();                  // decelerate quickly
 }
 
