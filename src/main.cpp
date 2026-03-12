@@ -14,7 +14,7 @@ Axis azimuth(MOTOR_B_STEP, MOTOR_B_DIR, MOTOR_B_EN, LIM_MIN_B, LIM_MAX_B);
 
 static unsigned long lastTipTiltReport = 0;
 static unsigned long lastAzimuthReport = 0;
-static const unsigned long REPORT_INTERVAL_MS = 1000; // ms
+static const unsigned long REPORT_INTERVAL_MS = 2000; // ms
 
 SystemState sys;   // NEW
 
