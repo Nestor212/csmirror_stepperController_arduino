@@ -10,7 +10,7 @@ constexpr uint32_t HOME_TIMEOUT_MS = 60000; // 60s homing timeout (set 0 to disa
 static const bool TB6600_ENABLE_ACTIVE_LOW = true; // ENA asserted when LOW
 
 // Homing profile
-static const float HOME_FAST_SPEED = 2000.0f;      // steps/sec (tune)
+static const float HOME_FAST_SPEED = 3000.0f;      // steps/sec (tune)
 static const float HOME_SLOW_SPEED = 200.0f;       // steps/sec (tune)
 static const float HOME_ACCEL      = 4000.0f;      // steps/sec^2 (tune)
 
