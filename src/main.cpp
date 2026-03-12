@@ -12,6 +12,10 @@
 Axis tiptilt(MOTOR_A_STEP, MOTOR_A_DIR, MOTOR_A_EN, LIM_MIN_A, LIM_MAX_A);
 Axis azimuth(MOTOR_B_STEP, MOTOR_B_DIR, MOTOR_B_EN, LIM_MIN_B, LIM_MAX_B);
 
+static unsigned long lastTipTiltReport = 0;
+static unsigned long lastAzimuthReport = 0;
+static const unsigned long REPORT_INTERVAL_MS = 1000; // ms
+
 SystemState sys;   // NEW
 
 static bool tiptiltWasMoving = false;
@@ -51,70 +55,113 @@ void setup()
 
 void loop()
 {
-  // Auto re-enable limits if timer elapsed
+  // ---- Housekeeping / safety ----
   limitsAutoReenableTick(lim);
 
-  // Update instantaneous block states
   updateLimitBlocks(tiptilt, lim);
   updateLimitBlocks(azimuth, lim);
 
-  // Enforce immediate stop if limits enabled and a limit asserts during normal motion
   enforceHardwareStops(tiptilt, lim);
   enforceHardwareStops(azimuth, lim);
 
-  // Check for move completion after a stop request and restore accel if so.
-  if (!tiptilt.stepper.isRunning() && tiptilt.cmd_stopRequested) 
+  // If a commanded stop has fully completed, restore the normal acceleration.
+  if (tiptilt.cmd_stopRequested && !tiptilt.stepper.isRunning())
   {
-      tiptilt.stepper.setAcceleration(tiptilt.accel);
-      tiptilt.cmd_stopRequested = false;
-  }
-  if(!azimuth.stepper.isRunning() && azimuth.cmd_stopRequested) 
-  {
-      azimuth.stepper.setAcceleration(azimuth.accel);
-      azimuth.cmd_stopRequested = false;
+    tiptilt.stepper.setAcceleration(tiptilt.accel);
+    tiptilt.cmd_stopRequested = false;
   }
 
-  // Run motion / homing (same logic as your original)
-  if ((tiptilt.hs == HomeState::IDLE || tiptilt.hs == HomeState::DONE || tiptilt.hs == HomeState::ERROR))
+  if (azimuth.cmd_stopRequested && !azimuth.stepper.isRunning())
+  {
+    azimuth.stepper.setAcceleration(azimuth.accel);
+    azimuth.cmd_stopRequested = false;
+  }
+
+  // ---- Service motion / homing ----
+  if (tiptilt.hs == HomeState::IDLE ||
+      tiptilt.hs == HomeState::DONE ||
+      tiptilt.hs == HomeState::ERROR)
+  {
     tiptilt.stepper.run();
-  else 
-    updateHoming(tiptilt);
-
-  if ((azimuth.hs == HomeState::IDLE || azimuth.hs == HomeState::DONE || azimuth.hs == HomeState::ERROR))
-    azimuth.stepper.run();
+  }
   else
+  {
+    updateHoming(tiptilt);
+  }
+
+  if (azimuth.hs == HomeState::IDLE ||
+      azimuth.hs == HomeState::DONE ||
+      azimuth.hs == HomeState::ERROR)
+  {
+    azimuth.stepper.run();
+  }
+  else
+  {
     updateHoming(azimuth);
+  }
 
-  bool movingA = (tiptilt.stepper.distanceToGo() != 0);
-  bool movingB = (azimuth.stepper.distanceToGo() != 0);
+  // ---- Motion state ----
+  bool movingA = tiptilt.stepper.isRunning();
+  bool movingB = azimuth.stepper.isRunning();
 
-  if (tiptiltWasMoving && !movingA) {
+  unsigned long now = millis();
+
+  // Reset each report timer when motion starts so it waits a full 5 s before printing.
+  if (movingA && !tiptiltWasMoving)
+    lastTipTiltReport = now;
+
+  if (movingB && !azimuthWasMoving)
+    lastAzimuthReport = now;
+
+  // Periodic progress reporting while moving.
+  if (movingA && (now - lastTipTiltReport >= REPORT_INTERVAL_MS))
+  {
+    lastTipTiltReport = now;
+    Serial.print(F("tip/tilt pos: "));
+    Serial.println(tiptilt.stepper.currentPosition());
+  }
+
+  if (movingB && (now - lastAzimuthReport >= REPORT_INTERVAL_MS))
+  {
+    lastAzimuthReport = now;
+    Serial.print(F("azimuth pos: "));
+    Serial.println(azimuth.stepper.currentPosition());
+  }
+
+  // One-time move completion event when motion transitions from moving -> stopped.
+  if (tiptiltWasMoving && !movingA)
+  {
     bumpSeq(sys);
     Serial.print(F("EVENT move_done a pos="));
     Serial.println(tiptilt.stepper.currentPosition());
   }
-  if (azimuthWasMoving && !movingB) {
+
+  if (azimuthWasMoving && !movingB)
+  {
     bumpSeq(sys);
     Serial.print(F("EVENT move_done b pos="));
     Serial.println(azimuth.stepper.currentPosition());
   }
 
-  azimuthWasMoving = movingB;
   tiptiltWasMoving = movingA;
+  azimuthWasMoving = movingB;
 
-  // Read commands (same behavior as your original)
+  // ---- Read commands ----
   while (Serial.available())
   {
     char c = (char)Serial.read();
-    if (c == '\r') continue;
+
+    if (c == '\r')
+      continue;
+
     if (c == '\n')
     {
       handleCmd(line, sys, lim, tiptilt, azimuth);
       line = "";
-    } 
-    else 
+    }
+    else if (line.length() < 120)
     {
-      if (line.length() < 120) line += c;
+      line += c;
     }
   }
 }

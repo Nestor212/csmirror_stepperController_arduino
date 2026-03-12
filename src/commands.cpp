@@ -453,6 +453,8 @@ void printStatus_temp(const SystemState& sys, const LimitsState& lim, Axis& tipt
 
 void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
+  if (tiptilt.stepper.isRunning() || azimuth.stepper.isRunning()) return;
+
   Serial.print(F("boot_id="));
   Serial.print(sys.boot_id);
   Serial.print(F(" seq="));
@@ -494,7 +496,8 @@ void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, 
 }
 void printPosStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
-
+  if (tiptilt.stepper.isRunning() || azimuth.stepper.isRunning()) return;
+  
   auto printAx = [](const char* name, char axis_id, Axis& ax) 
   {
     Serial.print(name);
