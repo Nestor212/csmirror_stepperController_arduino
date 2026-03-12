@@ -1,6 +1,6 @@
 // serial_csmirror_cli.c
 //
-// Minimal serial command interface for the CS Mirror stepper Arduino firmware.
+// Serial command interface for the CS Mirror stepper Arduino firmware.
 //
 // What this program does
 // ----------------------
