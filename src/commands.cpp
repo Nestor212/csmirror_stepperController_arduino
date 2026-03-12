@@ -367,7 +367,6 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
 // moveto <axis> <pos> [speed] [accel]
 static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsState& lim, int ntok, char* tok[])
 {
-  Serial.println("Moveto Command revieved");
   // moveto <axis> <pos> [speed] [accel]
   if (!ax) { Serial.println(F("ERR")); return; }
 
@@ -442,12 +441,14 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   }
 
   ax->stepper.moveTo(long(pos));
-  Serial.print("Moving to position: ");
-  Serial.println(ax->stepper.targetPosition());
   bumpSeq(sys); // NEW
 }
 
 // -------------------- public API --------------------
+void printStatus_temp(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
+{
+  Serial.print(F("Status temp"));
+}
 
 void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
@@ -519,7 +520,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   // ---- global ----
   if (c == CmdClass::GLOBAL && ntok == 1) 
   {
-    if (streq(action, "status")) { printStatus(sys, lim, tiptilt, azimuth); return; }
+    if (streq(action, "status")) { printStatus_temp(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "enable_limits"))  { cmd_enable_limits(lim); bumpSeq(sys); return; }
     if (streq(action, "disable_limits")) { cmd_disable_limits(lim); bumpSeq(sys); return; }
 

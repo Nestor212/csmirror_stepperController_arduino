@@ -53,7 +53,7 @@ void updateHoming(Axis& ax)
       if (limitTriggered(ax.limLoPin))
       {
         ax.stepper.stop();
-        delay(100);
+        delay(10);
 
         ax.hs = HomeState::BACKOFF_FROM_LOWER;
         ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
@@ -78,7 +78,7 @@ void updateHoming(Axis& ax)
       if (limitTriggered(ax.limLoPin))
       {
         ax.stepper.stop();
-        delay(100);
+        delay(10);
 
         ax.hs = HomeState::CLEAR_LOWER_FINAL;
         ax.stepper.move(long(FINAL_CLEAR_STEPS));
@@ -105,7 +105,7 @@ void updateHoming(Axis& ax)
       ax.stepper.setAcceleration(HOME_ACCEL);
       ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
       ax.stepper.moveTo(long(+BIG_TRAVEL));
-      delay(2000);
+      delay(1000);
 
       return;
     }
@@ -117,7 +117,7 @@ void updateHoming(Axis& ax)
       if (limitTriggered(ax.limHiPin))
       {
         ax.stepper.stop();
-        delay(100);
+        delay(10);
         
         ax.hs = HomeState::BACKOFF_FROM_UPPER;
         ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
@@ -142,7 +142,7 @@ void updateHoming(Axis& ax)
       if (limitTriggered(ax.limHiPin))
       {
         ax.stepper.stop();
-        delay(100);
+        delay(10);
         ax.t_ms = millis();
 
         ax.hs = HomeState::CLEAR_UPPER_FINAL;
@@ -174,7 +174,7 @@ void updateHoming(Axis& ax)
 
     default:
       ax.stepper.stop();
-      delay(100);
+      delay(10);
       setEnable(ax, false);
       ax.homed = false;
       ax.posValid = false;
