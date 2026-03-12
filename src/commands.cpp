@@ -447,7 +447,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
 // -------------------- public API --------------------
 void printStatus_temp(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
-  Serial.print(F("Status temp"));
+  Serial.println(F("STATUS TEST PRINT"));
 }
 
 void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
