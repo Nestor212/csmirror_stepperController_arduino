@@ -109,7 +109,7 @@ enum class CmdClass : uint8_t { UNKNOWN, GLOBAL, AXIS };
 static CmdClass classify_cmd(const char* action)
 {
   // Global commands (accept underscore + non-underscore aliases)
-  if (streq(action, "status") ||
+  if (streq(action, "status") || streq(action, "status_test") ||
       streq(action, "enable_limits") ||
       streq(action, "disable_limits") ||
       streq(action, "enable_all") || streq(action, "enableall") ||
@@ -520,7 +520,8 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   // ---- global ----
   if (c == CmdClass::GLOBAL && ntok == 1) 
   {
-    if (streq(action, "status")) { printStatus_temp(sys, lim, tiptilt, azimuth); return; }
+    if (streq(action, "status")) { printStatus(sys, lim, tiptilt, azimuth); return; }
+    if (streq(action, "status_test")) { printStatus_temp(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "enable_limits"))  { cmd_enable_limits(lim); bumpSeq(sys); return; }
     if (streq(action, "disable_limits")) { cmd_disable_limits(lim); bumpSeq(sys); return; }
 
