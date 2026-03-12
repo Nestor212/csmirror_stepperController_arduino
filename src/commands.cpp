@@ -452,8 +452,9 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
     printMoveBlocked(axis_id, bi);
     return;
   }
-
+  Serial.print("Moving to position: ");
   ax->stepper.moveTo(long(pos));
+  Serial.println(ax->stepper.targetPosition());
   bumpSeq(sys); // NEW
 }
 
