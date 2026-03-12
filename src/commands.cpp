@@ -367,6 +367,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
 // moveto <axis> <pos> [speed] [accel]
 static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsState& lim, int ntok, char* tok[])
 {
+  Serial.println("Moveto Command revieved");
   // moveto <axis> <pos> [speed] [accel]
   if (!ax) { Serial.println(F("ERR")); return; }
 
@@ -503,6 +504,8 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   if (ntok <= 0) return;
 
   const char* action = tok[0];
+  Serial.print(F("Received command: "));
+  Serial.println(action);
   CmdClass c = classify_cmd(action);
 
   if (c == CmdClass::UNKNOWN) {
