@@ -3,21 +3,19 @@
 #include <AccelStepper.h>
 
 // -------------------- AXIS STRUCT --------------------
-enum class HomeState : uint8_t {
+enum class HomeState : uint8_t 
+{
   IDLE,
   SEEK_LOWER_FAST,
   BACKOFF_FROM_LOWER,
   SEEK_LOWER_SLOW,
   CLEAR_LOWER_FINAL,
-  SET_ZERO,
 
   SEEK_UPPER_FAST,
   BACKOFF_FROM_UPPER,
   SEEK_UPPER_SLOW,
   CLEAR_UPPER_FINAL,
-  SET_MAX,
 
-  MOVE_TO_MID,
   DONE,
   ERROR
 };

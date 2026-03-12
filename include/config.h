@@ -14,8 +14,8 @@ static const float HOME_FAST_SPEED = 3000.0f;      // steps/sec (tune)
 static const float HOME_SLOW_SPEED = 200.0f;       // steps/sec (tune)
 static const float HOME_ACCEL      = 4000.0f;      // steps/sec^2 (tune)
 
-static const long  BACKOFF_STEPS      = 400;       // back off from switch after hit
-static const long  FINAL_CLEAR_STEPS  = 200;        // move away after final touch
+static const long  BACKOFF_STEPS      = 1000;       // back off from switch after hit
+static const long  FINAL_CLEAR_STEPS  = 400;        // move away after final touch
 static const long  BIG_TRAVEL         = 1000000L;  // big move used for seek
 static const uint16_t DEBOUNCE_MS     = 10;
 

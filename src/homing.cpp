@@ -102,7 +102,7 @@ void updateHoming(Axis& ax)
       ax.stepper.setAcceleration(HOME_ACCEL);
       ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
       ax.stepper.moveTo(+BIG_TRAVEL);
-      delay(1000);
+      delay(2000);
 
       return;
     }
