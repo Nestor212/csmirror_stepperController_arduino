@@ -110,6 +110,7 @@ static CmdClass classify_cmd(const char* action)
 {
   // Global commands (accept underscore + non-underscore aliases)
   if (streq(action, "status") || streq(action, "status_test") ||
+      streq(action, "pos") || streq(action, "position") ||
       streq(action, "enable_limits") ||
       streq(action, "disable_limits") ||
       streq(action, "enable_all") || streq(action, "enableall") ||
@@ -491,6 +492,19 @@ void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, 
   printAx("Tip/Tilt", 'a', tiptilt);
   printAx("Azimuth",  'b', azimuth);
 }
+void printPosStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
+{
+
+  auto printAx = [](const char* name, char axis_id, Axis& ax) 
+  {
+    Serial.print(name);
+    Serial.print(" pos = ");
+    Serial.println(ax.stepper.currentPosition());
+  };
+
+  printAx("Tip/Tilt", 'a', tiptilt);
+  printAx("Azimuth",  'b', azimuth);
+}
 
 void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
@@ -522,6 +536,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   {
     if (streq(action, "status")) { printStatus(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "status_test")) { printStatus_temp(sys, lim, tiptilt, azimuth); return; }
+    if (streq(action, "position") || streq(action, "pos")) { printPosStatus(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "enable_limits"))  { cmd_enable_limits(lim); bumpSeq(sys); return; }
     if (streq(action, "disable_limits")) { cmd_disable_limits(lim); bumpSeq(sys); return; }
 
