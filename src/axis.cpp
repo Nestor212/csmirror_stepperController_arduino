@@ -24,14 +24,7 @@ void stopAxis(Axis& ax)
 
 void emergencyStopAxis(Axis& ax)
 {
-  // Cancel any motion intent in the stepper object
-  long pos = ax.stepper.currentPosition();
-  ax.stepper.setCurrentPosition(pos);   // target = current, speed = 0
-
-  // Position may no longer be trustworthy after torque is removed
-  // Enforce re-homing required before allowing moves again
-  ax.posValid = false;
-  ax.homed = false; 
+  ax.stepper.setCurrentPosition(ax.stepper.currentPosition(););   // target = current, speed = 0
 
   // Finally remove motor torque
   setEnable(ax, false);
