@@ -330,7 +330,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
 
   if (speed > MOTOR_MAX_SPEED) 
   {
-    speed = MOTOR_MAX_SPEED;
+    speed = float(MOTOR_MAX_SPEED);
     Serial.println(F("WARN: Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
   }
 
@@ -420,7 +420,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
 
   if (speed > MOTOR_MAX_SPEED) 
   {
-    speed = MOTOR_MAX_SPEED;
+    speed = float(MOTOR_MAX_SPEED);
     Serial.println(F("WARN: Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
   }
 
