@@ -53,8 +53,10 @@ void updateHoming(Axis& ax)
       if (limitTriggered(ax.limLoPin))
       {
         ax.stepper.stop();
-        ax.t_ms = millis();
+
         ax.hs = HomeState::BACKOFF_FROM_LOWER;
+        ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
+        ax.stepper.move(BACKOFF_STEPS);
       }
       return;
     }
@@ -62,27 +64,22 @@ void updateHoming(Axis& ax)
     case HomeState::BACKOFF_FROM_LOWER:
     {
       ax.stepper.run();
-      if (millis() - ax.t_ms < DEBOUNCE_MS) return;
+      if (!(ax.stepper.distanceToGo() == 0)) return;
 
-      ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
-      ax.stepper.move(BACKOFF_STEPS);
       ax.hs = HomeState::SEEK_LOWER_SLOW;
+      ax.stepper.move(-BIG_TRAVEL);
       return;
     }
 
     case HomeState::SEEK_LOWER_SLOW:
     {
       ax.stepper.run();
-      if (ax.stepper.distanceToGo() == 0)
-      {
-        ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
-        ax.stepper.moveTo(-BIG_TRAVEL);
-      }
       if (limitTriggered(ax.limLoPin))
       {
         ax.stepper.stop();
-        ax.t_ms = millis();
+
         ax.hs = HomeState::CLEAR_LOWER_FINAL;
+        ax.stepper.move(FINAL_CLEAR_STEPS);
       }
       return;
     }
@@ -90,26 +87,22 @@ void updateHoming(Axis& ax)
     case HomeState::CLEAR_LOWER_FINAL:
     {
       ax.stepper.run();
+      if (!(ax.stepper.distanceToGo() == 0))
+      {
+        ax.stepper.stop();
+        ax.t_ms = millis();
+        return;
+      } 
       if (millis() - ax.t_ms < DEBOUNCE_MS) return;
-
-      ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
-      ax.stepper.move(FINAL_CLEAR_STEPS);
-      ax.hs = HomeState::SET_ZERO;
-      return;
-    }
-
-    case HomeState::SET_ZERO:
-    {
-      ax.stepper.run();
-      if (ax.stepper.distanceToGo() != 0) return;
 
       ax.stepper.setCurrentPosition(0);
 
       // -------- Upper limit --------
+      ax.hs = HomeState::SEEK_UPPER_FAST;
       ax.stepper.setAcceleration(HOME_ACCEL);
       ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
       ax.stepper.moveTo(+BIG_TRAVEL);
-      ax.hs = HomeState::SEEK_UPPER_FAST;
+
       return;
     }
 
@@ -120,8 +113,10 @@ void updateHoming(Axis& ax)
       if (limitTriggered(ax.limHiPin))
       {
         ax.stepper.stop();
-        ax.t_ms = millis();
+        
         ax.hs = HomeState::BACKOFF_FROM_UPPER;
+        ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
+        ax.stepper.move(-BACKOFF_STEPS);
       }
       return;
     }
@@ -129,27 +124,23 @@ void updateHoming(Axis& ax)
     case HomeState::BACKOFF_FROM_UPPER:
     {
       ax.stepper.run();
-      if (millis() - ax.t_ms < DEBOUNCE_MS) return;
+      if (!(ax.stepper.distanceToGo() == 0)) return;
 
-      ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
-      ax.stepper.move(-BACKOFF_STEPS);
       ax.hs = HomeState::SEEK_UPPER_SLOW;
+      ax.stepper.move(+BIG_TRAVEL);
       return;
     }
 
     case HomeState::SEEK_UPPER_SLOW:
     {
       ax.stepper.run();
-      if (ax.stepper.distanceToGo() == 0)
-      {
-        ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
-        ax.stepper.moveTo(+BIG_TRAVEL);
-      }
       if (limitTriggered(ax.limHiPin))
       {
         ax.stepper.stop();
         ax.t_ms = millis();
-        ax.hs = HomeState::CLEAR_UPPER_FINAL;
+
+        ax.hs = HomeState::CLEAR_LOWER_FINAL;
+        ax.stepper.move(-FINAL_CLEAR_STEPS);
       }
       return;
     }
@@ -157,41 +148,20 @@ void updateHoming(Axis& ax)
     case HomeState::CLEAR_UPPER_FINAL:
     {
       ax.stepper.run();
-      if (millis() - ax.t_ms < DEBOUNCE_MS) return;
-
-      ax.stepper.setMaxSpeed(HOME_SLOW_SPEED);
-      ax.stepper.move(-FINAL_CLEAR_STEPS);
-      ax.hs = HomeState::SET_MAX;
-      return;
-    }
-
-    case HomeState::SET_MAX:
-    {
-      ax.stepper.run();
-      if (ax.stepper.distanceToGo() != 0) return;
-
-      // max position corresponds to the upper edge; since we cleared away FINAL_CLEAR_STEPS,
-      // approximate upper edge as current + FINAL_CLEAR_STEPS.
-      ax.maxPos = ax.stepper.currentPosition() + FINAL_CLEAR_STEPS;
-
-      long mid = ax.maxPos / 2;
-      ax.stepper.setMaxSpeed(HOME_FAST_SPEED);
-      ax.stepper.moveTo(mid);
-      ax.hs = HomeState::MOVE_TO_MID;
-      return;
-    }
-
-    case HomeState::MOVE_TO_MID:
-    {
-      ax.stepper.run();
-      if (ax.stepper.distanceToGo() == 0)
+      if (!(ax.stepper.distanceToGo() == 0))
       {
         ax.stepper.stop();
-        ax.homed = true;
-        ax.posValid = true;
-        ax.hs = HomeState::DONE;
-        setEnable(ax, false);   // disable motor after homing is complete
-      }
+        ax.t_ms = millis();
+        return;
+      } 
+      if (millis() - ax.t_ms < DEBOUNCE_MS) return;
+
+      ax.maxPos = ax.stepper.currentPosition();
+
+      ax.hs = HomeState::DONE;
+      ax.homed = true;
+      ax.posValid = true;
+      setEnable(ax, false);   // disable motor after homing is complete
       return;
     }
 
