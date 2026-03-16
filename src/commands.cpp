@@ -66,7 +66,7 @@ static Axis* axisFromId(char id, Axis& tiptilt, Axis& azimuth)
 
 static void printMoveBlocked(char axisName, const TargetBlockInfo& bi)
 {
-  Serial.print(F("ERR: Move blocked. axis="));
+  Serial.print(F("ERR:  Move blocked. axis="));
   Serial.print(axisName);  // or ax.name / whatever you have
   Serial.print(F(" cur=")); Serial.print(bi.cur);
   Serial.print(F(" target=")); Serial.print(bi.target);
@@ -230,7 +230,7 @@ static void cmd_home_axis(Axis* ax, char axis_id, const LimitsState& lim, Axis& 
   if (!ax) { Serial.println("ERR"); return; }
 
   if (!lim.enabled) {
-    Serial.print(F("ERR:Motor "));
+    Serial.print(F("ERR:  Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" limits are disabled. Cannot home."));
     return;
@@ -242,20 +242,20 @@ static void cmd_home_axis(Axis* ax, char axis_id, const LimitsState& lim, Axis& 
   {
     if (!tiptilt.homed || !tiptilt.posValid)
     {
-      Serial.println(F("ERR:Cannot home motor B until motor A is homed and position is valid."));
+      Serial.println(F("ERR: Cannot home motor B until motor A is homed and position is valid."));
       return;
     }
 
-    if (tiptilt.stepper.currentPosition() >= 3000)
+    if (tiptilt.stepper.currentPosition() > 3000)
     {
-      Serial.print(F("ERR:Cannot home motor B until motor A < position 3000. Current A pos="));
+      Serial.print(F("ERR: Cannot home motor B until motor A < position 3000. Current A pos="));
       Serial.println(tiptilt.stepper.currentPosition());
       return;
     }
 
     if (tiptilt.stepper.isRunning())
     {
-      Serial.println(F("ERR:Cannot home motor B while motor A is moving."));
+      Serial.println(F("ERR: Cannot home motor B while motor A is moving."));
       return;
     }
   }
@@ -268,12 +268,12 @@ static void cmd_set_axis(SystemState& sys, Axis* ax, char axis_id, int ntok, cha
   // setaxis <axis> <pos> <max>
 
   if (!ax) {
-    Serial.println(F("ERR:Invalid axis."));
+    Serial.println(F("ERR: Invalid axis."));
     return;
   }
 
   if (!(ntok == 4)) {
-    Serial.println(F("ERR:Expected: setaxis <axis> <pos> <max>"));
+    Serial.println(F("ERR: Expected: setaxis <axis> <pos> <max>"));
     return;
   }
 
@@ -281,12 +281,12 @@ static void cmd_set_axis(SystemState& sys, Axis* ax, char axis_id, int ntok, cha
   long maxv = 0;
 
   if (!parse_long(tok[2], pos)) {
-    Serial.println(F("ERR:Invalid position."));
+    Serial.println(F("ERR: Invalid position."));
     return;
   }
 
   if (!parse_long(tok[3], maxv)) {
-    Serial.println(F("ERR:Invalid max limit."));
+    Serial.println(F("ERR: Invalid max limit."));
     return;
   }
 
@@ -319,14 +319,14 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
 
   //check if position is valid (homed) before allowing move or moveto
   if (!ax->posValid || !ax->homed) {
-    Serial.print(F("ERR:Motor "));
+    Serial.print(F("ERR: Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" position invalid. Home or sync state first."));
     return;
   }
 
   if (ntok < 4) {
-    Serial.println(F("ERR:Invalid MOVE command format."));
+    Serial.println(F("ERR: Invalid MOVE command format."));
     Serial.println(F("Expected: move <axis> <dir> <steps> [speed] [accel]"));
     return;
   }
@@ -334,7 +334,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   int dir = 0;
   long steps = 0;
   if (!parse_int(tok[2], dir) || !parse_long(tok[3], steps)) {
-    Serial.println(F("ERR:Invalid MOVE args (dir/steps)."));
+    Serial.println(F("ERR: Invalid MOVE args (dir/steps)."));
     return;
   }
 
@@ -342,10 +342,10 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   float accel = 0.0f;
 
   if (ntok >= 5) {
-    if (!parse_float(tok[4], speed)) { Serial.println(F("ERR:Invalid speed.")); return; }
+    if (!parse_float(tok[4], speed)) { Serial.println(F("ERR: Invalid speed.")); return; }
   }
   if (ntok >= 6) {
-    if (!parse_float(tok[5], accel)) { Serial.println(F("ERR:Invalid accel.")); return; }
+    if (!parse_float(tok[5], accel)) { Serial.println(F("ERR: Invalid accel.")); return; }
   }
 
   if (speed > MOTOR_MAX_SPEED) 
@@ -355,12 +355,12 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   }
 
   if (dir != 0 && dir != 1) {
-    Serial.println(F("ERR:dir must be 0 or 1"));
+    Serial.println(F("ERR: dir must be 0 or 1"));
     return;
   }
 
   if (!ax->enabled) {
-    Serial.print(F("ERR:Motor "));
+    Serial.print(F("ERR: Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" is disabled."));
     return;
@@ -408,7 +408,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   //check if position is valid (homed) before allowing move or moveto
   if (!ax->posValid || !ax->homed) 
   {
-    Serial.print(F("ERR:Motor "));
+    Serial.print(F("ERR: Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" position invalid. Home or sync state first."));
     return;
@@ -416,7 +416,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
 
   if (ntok < 3) 
   {
-    Serial.println(F("ERR:Invalid MOVETO command format."));
+    Serial.println(F("ERR: Invalid MOVETO command format."));
     Serial.println(F("Expected: moveto <axis> <pos> [speed] [accel]"));
     return;
   }
@@ -424,7 +424,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   long pos = 0;
   if (!parse_long(tok[2], pos)) 
   {
-    Serial.println(F("ERR:Invalid position."));
+    Serial.println(F("ERR: Invalid position."));
     return;
   }
 
@@ -435,14 +435,14 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   {
     if (!parse_float(tok[3], speed)) 
     { 
-      Serial.println(F("ERR:Invalid speed.")); return; 
+      Serial.println(F("ERR: Invalid speed.")); return; 
     }
   }
   if (ntok >= 5) 
   {
     if (!parse_float(tok[4], accel)) 
     { 
-      Serial.println(F("ERR:Invalid accel.")); return; 
+      Serial.println(F("ERR: Invalid accel.")); return; 
     }
   }
 
@@ -454,7 +454,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
 
   if (!ax->enabled) 
   {
-    Serial.print(F("ERR:Motor "));
+    Serial.print(F("ERR: Motor "));
     Serial.print((char)toupper(axis_id));
     Serial.println(F(" is disabled."));
     return;
@@ -614,7 +614,7 @@ static void cmd_help(Axis& tiptilt, Axis& azimuth)
   Serial.println(F("  example: 120 -45"));
 
   Serial.println(F("Common responses:"));
-  Serial.println(F("  ERR:<message>"));
+  Serial.println(F("  ERR: <message>"));
   Serial.println(F("  WARN:<message>"));
 }
 
@@ -636,7 +636,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   CmdClass c = classify_cmd(action);
 
   if (c == CmdClass::UNKNOWN) {
-    Serial.print(F("ERR:Unknown command: "));
+    Serial.print(F("ERR: Unknown command: "));
     Serial.println(action);
     return;
   }
@@ -657,7 +657,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
     if (streq(action, "estop")) { cmd_estop(tiptilt, azimuth);    bumpSeq(sys); return; }
     if (streq(action, "reset") || streq(action, "reboot")) { Serial.println(F("Resetting controller.")); delay(50); wdt_enable(WDTO_15MS); while (1) {}  }
 
-    Serial.print(F("ERR:Unhandled global command: "));
+    Serial.print(F("ERR: Unhandled global command: "));
     Serial.println(action);
     return;
   }
@@ -665,7 +665,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   // ---- axis ----
   if (ntok < 2 || !tok[1] || !tok[1][0]) 
   {
-    Serial.print(F("ERR:Axis required (a/b) for command: "));
+    Serial.print(F("ERR: Axis required (a/b) for command: "));
     Serial.println(action);
     return;
   }
@@ -674,7 +674,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   Axis* ax = axisFromId(axis_id, tiptilt, azimuth);
   if (!ax) 
   {
-    Serial.println(F("ERR:Invalid axis (use a or b)."));
+    Serial.println(F("ERR: Invalid axis (use a or b)."));
     return;
   }
 
@@ -689,7 +689,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   if (streq(action, "move"))   { cmd_move(sys, ax, axis_id, lim, ntok, tok); return; }
   if (streq(action, "moveto")) { cmd_moveto(sys, ax, axis_id, lim, ntok, tok); return; }
 
-  Serial.print(F("ERR:Unhandled axis command: "));
+  Serial.print(F("ERR: Unhandled axis command: "));
   Serial.println(action);
   return;
 }
