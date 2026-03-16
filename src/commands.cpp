@@ -482,7 +482,7 @@ void printStatus_long(const SystemState& sys, const LimitsState& lim, Axis& tipt
   if (tiptilt.stepper.isRunning() || azimuth.stepper.isRunning()) return;
 
   Serial.print(F("boot_id="));
-  Serial.print(sys.boot_id);
+  Serial.println(sys.boot_id);
 
   Serial.print(F("limitsEnabled="));
   Serial.println(lim.enabled ? 1 : 0);

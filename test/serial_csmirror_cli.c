@@ -644,7 +644,7 @@ static void cmd_sync(int fd, const char *state_path) {
   if (ha) {
     int valid = (axa.valid == 1) ? 1 : 0;
     char cmd[128];
-    snprintf(cmd, sizeof(cmd), "setaxis a %d %d %d", axa.pos, axa.max, valid);
+    snprintf(cmd, sizeof(cmd), "setaxis a %d %d", axa.pos, axa.max);
     printf("> %s\n", cmd);
     (void)send_line(fd, cmd);
 
