@@ -799,7 +799,7 @@ static void repl(int fd, const char *state_path) {
     for (size_t i = 0; low[i]; i++) low[i] = (char)tolower((unsigned char)low[i]);
 
     if (!strcmp(low, "quit") || !strcmp(low, "exit")) break;
-    if (!strcmp(low, "help") || !strcmp(low, "?")) { print_help(); continue; }
+    // if (!strcmp(low, "help") || !strcmp(low, "?")) { print_help(); continue; }
     if (!strcmp(low, "save")) { cmd_save(fd, state_path); continue; }
     if (!strcmp(low, "sync")) { cmd_sync(fd, state_path); continue; }
 
