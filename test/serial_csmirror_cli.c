@@ -642,7 +642,6 @@ static void cmd_sync(int fd, const char *state_path) {
 
   // Send setaxis for each axis present in saved state.
   if (ha) {
-    int valid = (axa.valid == 1) ? 1 : 0;
     char cmd[128];
     snprintf(cmd, sizeof(cmd), "setaxis a %d %d", axa.pos, axa.max);
     printf("> %s\n", cmd);
@@ -657,9 +656,8 @@ static void cmd_sync(int fd, const char *state_path) {
   }
 
   if (hb) {
-    int valid = (axb.valid == 1) ? 1 : 0;
     char cmd[128];
-    snprintf(cmd, sizeof(cmd), "setaxis b %d %d %d", axb.pos, axb.max, valid);
+    snprintf(cmd, sizeof(cmd), "setaxis b %d %d %d", axb.pos, axb.max);
     printf("> %s\n", cmd);
     (void)send_line(fd, cmd);
 
