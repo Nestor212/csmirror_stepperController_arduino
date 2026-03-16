@@ -104,42 +104,47 @@ void loop()
   bool movingA = tiptilt.stepper.isRunning();
   bool movingB = azimuth.stepper.isRunning();
 
-  unsigned long now = millis();
+  
 
-  // Reset each report timer when motion starts so it waits a full 5 s before printing.
-  if (movingA && !tiptiltWasMoving)
-    lastTipTiltReport = now;
+  // --------- Periodic Position Reporting during a move ---------
 
-  if (movingB && !azimuthWasMoving)
-    lastAzimuthReport = now;
+  // unsigned long now = millis();
 
-  // Periodic progress reporting while moving.
-  if (movingA && (now - lastTipTiltReport >= REPORT_INTERVAL_MS))
-  {
-    lastTipTiltReport = now;
-    Serial.print(F("a pos: "));
-    Serial.println(tiptilt.stepper.currentPosition());
-  }
+  // // Reset each report timer when motion starts so it waits a full 5 s before printing.
+  // if (movingA && !tiptiltWasMoving)
+  //   lastTipTiltReport = now;
 
-  if (movingB && (now - lastAzimuthReport >= REPORT_INTERVAL_MS))
-  {
-    lastAzimuthReport = now;
-    Serial.print(F("b pos: "));
-    Serial.println(azimuth.stepper.currentPosition());
-  }
+  // if (movingB && !azimuthWasMoving)
+  //   lastAzimuthReport = now;
+
+  // // Periodic progress reporting while moving.
+  // if (movingA && (now - lastTipTiltReport >= REPORT_INTERVAL_MS))
+  // {
+  //   lastTipTiltReport = now;
+  //   Serial.print(F("a pos: "));
+  //   Serial.println(tiptilt.stepper.currentPosition());
+  // }
+
+  // if (movingB && (now - lastAzimuthReport >= REPORT_INTERVAL_MS))
+  // {
+  //   lastAzimuthReport = now;
+  //   Serial.print(F("b pos: "));
+  //   Serial.println(azimuth.stepper.currentPosition());
+  // }
+  // ----------------------------------------------------------------------
 
   // One-time move completion event when motion transitions from moving -> stopped.
   if (tiptiltWasMoving && !movingA)
   {
     bumpSeq(sys);
-    Serial.print(F("EVENT move_done a pos="));
+    Serial.print(F("Tilt(a) move done pos="));
     Serial.println(tiptilt.stepper.currentPosition());
   }
 
   if (azimuthWasMoving && !movingB)
   {
     bumpSeq(sys);
-    Serial.print(F("EVENT move_done b pos="));
+    Serial.print(F("Azimith(a) move done pos="));
     Serial.println(azimuth.stepper.currentPosition());
   }
 

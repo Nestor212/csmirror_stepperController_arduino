@@ -109,7 +109,8 @@ enum class CmdClass : uint8_t { UNKNOWN, GLOBAL, AXIS };
 static CmdClass classify_cmd(const char* action)
 {
   // Global commands (accept underscore + non-underscore aliases)
-  if (streq(action, "status") || streq(action, "status_long") ||
+  if (streq(action, "help") ||
+      streq(action, "status") || streq(action, "status_long") ||
       streq(action, "pos") || streq(action, "position") ||
       streq(action, "enable_limits") ||
       streq(action, "disable_limits") ||
@@ -224,18 +225,41 @@ static void cmd_stop_axis(Axis* ax, char axis_id)
   return;
 }
 
-static void cmd_home_axis(Axis* ax, char axis_id, const LimitsState& lim)
+static void cmd_home_axis(Axis* ax, char axis_id, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
   if (!ax) { Serial.println("ERR"); return; }
 
   if (!lim.enabled) {
-    Serial.print("ERR:Motor ");
+    Serial.print(F("ERR:Motor "));
     Serial.print((char)toupper(axis_id));
-    Serial.println(" limits are disabled. Cannot home.");
+    Serial.println(F(" limits are disabled. Cannot home."));
     return;
   }
+
+  // Mechanical interlock:
+  // Before homing B, A must already be homed and sitting at position 0.
+  if (axis_id == 'b')
+  {
+    if (!tiptilt.homed || !tiptilt.posValid)
+    {
+      Serial.println(F("ERR:Cannot home motor B until motor A is homed and position is valid."));
+      return;
+    }
+
+    if (tiptilt.stepper.currentPosition() >= 3000)
+    {
+      Serial.print(F("ERR:Cannot home motor B until motor A < position 3000. Current A pos="));
+      Serial.println(tiptilt.stepper.currentPosition());
+      return;
+    }
+
+    if (tiptilt.stepper.isRunning())
+    {
+      Serial.println(F("ERR:Cannot home motor B while motor A is moving."));
+      return;
+    }
+  }
   startHoming(*ax);
-  return;
 }
 
 static void cmd_set_axis(SystemState& sys, Axis* ax, char axis_id, int ntok, char* tok[])
@@ -531,6 +555,69 @@ void printPosStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptil
   return;
 }
 
+static void cmd_help(Axis& tiptilt, Axis& azimuth)
+{
+  if (tiptilt.stepper.isRunning() || azimuth.stepper.isRunning()) return;
+
+  Serial.println(F("COMMANDS"));
+  Serial.println(F("Global:"));
+  Serial.println(F("  help"));
+  Serial.println(F("  status"));
+  Serial.println(F("  status_long"));
+  Serial.println(F("  pos | position"));
+  Serial.println(F("  enable_limits"));
+  Serial.println(F("  disable_limits"));
+  Serial.println(F("  enable_all | enableall"));
+  Serial.println(F("  disable_all | disableall"));
+  Serial.println(F("  stop_all | stopall | stop"));
+  Serial.println(F("  estop"));
+  Serial.println(F("  reset | reboot"));
+
+  Serial.println(F("Axis commands:"));
+  Serial.println(F("  enable <axis>"));
+  Serial.println(F("  disable <axis>"));
+  Serial.println(F("  stop <axis>"));
+  Serial.println(F("  home <axis>"));
+  Serial.println(F("  zero <axis>"));
+  Serial.println(F("  setaxis <axis> <pos> <max>"));
+  Serial.println(F("      - can be used to reset motor states in arduino when arduino resets."));
+
+  Serial.println(F("  move <axis> <dir> <steps> [speed] [accel]"));
+  Serial.println(F("  moveto <axis> <pos> [speed] [accel]"));
+  Serial.println(F("      - [speed] & [accel] are optional, if not present, system will use last used values."));
+
+  Serial.println(F("Axis IDs:"));
+  Serial.println(F("  a = Tip/Tilt"));
+  Serial.println(F("  b = Azimuth"));
+
+  Serial.println(F("MOVE/MOVETO args:"));
+  Serial.println(F("  dir: 0=negative, 1=positive"));
+  Serial.println(F("  speed: steps/sec, max = 1500 sps"));
+  Serial.println(F("  accel: steps/sec^2"));
+  Serial.println(F("  [ ] means optional"));
+
+  
+
+  Serial.println(F("OUTPUT FORMAT"));
+  Serial.println(F("status:"));
+  Serial.println(F("  <axis> <enabled> <pos> <max>"));
+  Serial.println(F("  example: a 1 123 5000"));
+
+  Serial.println(F("status_long:"));
+  Serial.println(F("  boot_id=<u32>"));
+  Serial.println(F("  limitsEnabled=<0|1>"));
+  Serial.println(F("  Tip/Tilt id=<a|b> en=<0|1> pos=<long> max=<long> homed=<0|1> valid=<0|1> lolim=<0|1> hilim=<0|1>"));
+  Serial.println(F("  Azimuth  id=<a|b> en=<0|1> pos=<long> max=<long> homed=<0|1> valid=<0|1> lolim=<0|1> hilim=<0|1>"));
+
+  Serial.println(F("pos / position:"));
+  Serial.println(F("  <tiptilt_pos> <azimuth_pos>"));
+  Serial.println(F("  example: 120 -45"));
+
+  Serial.println(F("Common responses:"));
+  Serial.println(F("  ERR:<message>"));
+  Serial.println(F("  WARN:<message>"));
+}
+
 void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
   s.trim();
@@ -557,6 +644,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   // ---- global ----
   if (c == CmdClass::GLOBAL && ntok == 1) 
   {
+    if (streq(action, "help") || streq(action, "h")) { cmd_help(tiptilt, azimuth); return; } 
     if (streq(action, "status_long")) { printStatus_long(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "status")) { printStatus(sys, lim, tiptilt, azimuth); return; }
     if (streq(action, "position") || streq(action, "pos")) { printPosStatus(sys, lim, tiptilt, azimuth); return; }
@@ -595,7 +683,7 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   if (streq(action, "enable"))  { cmd_enable_axis(ax, axis_id);  bumpSeq(sys); return; }
   if (streq(action, "disable")) { cmd_disable_axis(ax, axis_id); bumpSeq(sys); return; }
   if (streq(action, "stop"))    { cmd_stop_axis(ax, axis_id);    bumpSeq(sys); return; }
-  if (streq(action, "home") || streq(action, "zero")) { cmd_home_axis(ax, axis_id, lim); bumpSeq(sys); return; }
+  if (streq(action, "home") || streq(action, "zero")) { cmd_home_axis(ax, axis_id, lim, tiptilt, azimuth); bumpSeq(sys); return; }
   
   if (streq(action, "setaxis")) { cmd_set_axis(sys, ax, axis_id, ntok, tok); return; }
   if (streq(action, "move"))   { cmd_move(sys, ax, axis_id, lim, ntok, tok); return; }
