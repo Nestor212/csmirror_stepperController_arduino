@@ -2,7 +2,7 @@
 
 static uint32_t pseudoRandom32()
 {
-  // Works on Uno without true RNG; good enough as a "boot marker".
+  // Boot Marker
   // Mix time + floating analog pin noise.
   uint32_t x = (uint32_t)millis();
   x ^= ((uint32_t)analogRead(A0) << 16);

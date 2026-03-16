@@ -6,6 +6,7 @@
 enum class HomeState : uint8_t 
 {
   IDLE,
+
   SEEK_LOWER_FAST,
   BACKOFF_FROM_LOWER,
   SEEK_LOWER_SLOW,
@@ -36,7 +37,7 @@ struct Axis {
   uint32_t t_ms = 0;
 
   float accel;
-  bool cmd_stopRequested = false; // for cooperative stop (vs hard stop from limits)
+  bool cmd_stopRequested = false; // for smooth stop (vs hard stop for limits)
 
   // Direction block based on active photodetectors (when limits enabled)
   //  0 = none

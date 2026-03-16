@@ -12,11 +12,13 @@
 Axis tiptilt(MOTOR_A_STEP, MOTOR_A_DIR, MOTOR_A_EN, LIM_MIN_A, LIM_MAX_A);
 Axis azimuth(MOTOR_B_STEP, MOTOR_B_DIR, MOTOR_B_EN, LIM_MIN_B, LIM_MAX_B);
 
-static unsigned long lastTipTiltReport = 0;
-static unsigned long lastAzimuthReport = 0;
-static const unsigned long REPORT_INTERVAL_MS = 2000; // ms
+// --------- Periodic Position Reporting during a move ---------
+// static unsigned long lastTipTiltReport = 0;
+// static unsigned long lastAzimuthReport = 0;
+// static const unsigned long REPORT_INTERVAL_MS = 2000; // ms
+// -------------------------------------------------------------
 
-SystemState sys;   // NEW
+SystemState sys;
 
 static bool tiptiltWasMoving = false;
 static bool azimuthWasMoving = false;
@@ -43,10 +45,6 @@ void setup()
 
   azimuth.stepper.setMaxSpeed(float(MOTOR_MAX_SPEED));
   azimuth.stepper.setAcceleration(MOTOR_MAX_ACCEL);
-
-  // Helps TB6600 clones that need wider STEP pulses
-  // tiptilt.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
-  // azimuth.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
 
   systemStateInit(sys); // NEW
 
@@ -103,8 +101,6 @@ void loop()
   // ---- Motion state ----
   bool movingA = tiptilt.stepper.isRunning();
   bool movingB = azimuth.stepper.isRunning();
-
-  
 
   // --------- Periodic Position Reporting during a move ---------
 

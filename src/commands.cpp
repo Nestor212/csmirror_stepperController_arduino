@@ -596,8 +596,6 @@ static void cmd_help(Axis& tiptilt, Axis& azimuth)
   Serial.println(F("  accel: steps/sec^2"));
   Serial.println(F("  [ ] means optional"));
 
-  
-
   Serial.println(F("OUTPUT FORMAT"));
   Serial.println(F("status:"));
   Serial.println(F("  <axis> <enabled> <pos> <max>"));

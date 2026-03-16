@@ -11,14 +11,20 @@ void axisInitPins(Axis& ax)
 void setEnable(Axis& ax, bool on)
 {
   ax.enabled = on;
-  if (TB6600_ENABLE_ACTIVE_LOW) digitalWrite(ax.enPin, on ? LOW : HIGH);
-  else                          digitalWrite(ax.enPin, on ? HIGH : LOW);
+  if (TB6600_ENABLE_ACTIVE_LOW) 
+  {
+    digitalWrite(ax.enPin, on ? LOW : HIGH);
+  }
+  else   
+  {
+    digitalWrite(ax.enPin, on ? HIGH : LOW);
+  }
 }
 
 void stopAxis(Axis& ax)
 {
-  ax.cmd_stopRequested = true; // for cooperative stop in loop() vs hard stop from limits
-  ax.stepper.setAcceleration(4000);   // choose a much higher safe value
+  ax.cmd_stopRequested = true; // for smooth stop in loop() vs hard stop from limits
+  ax.stepper.setAcceleration(5000);   // choose a much higher safe value
   ax.stepper.stop();                  // decelerate quickly
 }
 
@@ -26,6 +32,6 @@ void emergencyStopAxis(Axis& ax)
 {
   ax.stepper.setCurrentPosition(ax.stepper.currentPosition());   // target = current, speed = 0
 
-  // Finally remove motor torque
+  // Remove motor torque
   setEnable(ax, false);
 }
