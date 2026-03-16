@@ -133,14 +133,14 @@ void loop()
   if (tiptiltWasMoving && !movingA)
   {
     bumpSeq(sys);
-    Serial.print(F("Tilt(a) move done pos="));
+    Serial.print(F("Tilt move done pos="));
     Serial.println(tiptilt.stepper.currentPosition());
   }
 
   if (azimuthWasMoving && !movingB)
   {
     bumpSeq(sys);
-    Serial.print(F("Azimith(a) move done pos="));
+    Serial.print(F("Azimith move done pos="));
     Serial.println(azimuth.stepper.currentPosition());
   }
 

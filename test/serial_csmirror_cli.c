@@ -558,7 +558,8 @@ static json_object *axis_to_json(const AxisState *ax) {
   return o;
 }
 
-static json_object *status_to_json(const StatusRec *st) {
+static json_object *status_to_json(const StatusRec *st) 
+{
   json_object *root = json_object_new_object();
   json_object_object_add(root, "ts", json_object_new_double(st->ts));
   json_object_object_add(root, "boot_id", json_object_new_int(st->boot_id));
@@ -938,8 +939,8 @@ int main(int argc, char **argv) {
   int fd = open_port(port, baud);
   if (fd < 0) {
     fprintf(stderr, "ERROR opening serial port %s: %s\n", port, strerror(errno));
-    fprintf(stderr, "Tip (Linux): add user to dialout group, then log out/in:\n");
-    fprintf(stderr, "  sudo usermod -aG dialout $USER\n");
+    fprintf(stderr, "    On Linux: add user to dialout group, then log out/in:\n");
+    fprintf(stderr, "        sudo usermod -aG dialout $USER\n");
     return 1;
   }
 

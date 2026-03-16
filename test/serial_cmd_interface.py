@@ -331,7 +331,7 @@ def cmd_sync(ser, state_path):
         if valid not in (0, 1):
             valid = 0
 
-        cmds.append(f"setaxis {axis} {pos} {mx} {valid}")
+        cmds.append(f"setaxis {axis} {pos} {mx}")
 
     if not cmds:
         print("ERROR: no setaxis commands generated from saved state.")
@@ -342,7 +342,7 @@ def cmd_sync(ser, state_path):
         send_line(ser, c)
         drain(ser, 0.35)
 
-    # Optional: save fresh status after restore (recommended)
+    # Save fresh status after restore
     try:
         st2 = get_status(ser)
         save_json(state_path, st2)
@@ -355,7 +355,7 @@ def cmd_sync(ser, state_path):
 # -------------------------------------------------------
 
 def repl(ser, state_path):
-    drain(ser, 0.8)  # show banner/chatter
+    drain(ser, 0.8)
 
     print("\nInteractive serial interface")
     print("Type 'help' for commands\n")
