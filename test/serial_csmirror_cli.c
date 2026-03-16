@@ -657,7 +657,7 @@ static void cmd_sync(int fd, const char *state_path) {
 
   if (hb) {
     char cmd[128];
-    snprintf(cmd, sizeof(cmd), "setaxis b %d %d %d", axb.pos, axb.max);
+    snprintf(cmd, sizeof(cmd), "setaxis b %d %d", axb.pos, axb.max);
     printf("> %s\n", cmd);
     (void)send_line(fd, cmd);
 
