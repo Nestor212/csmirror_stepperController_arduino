@@ -173,48 +173,112 @@ static int set_dtr_rts(int fd, bool dtr_on, bool rts_on) {
 }
 
 // Open and configure the serial port.
-static int open_port(const char *path, int baud) {
-  // O_NOCTTY: don't let this port become our controlling terminal
-  // O_CLOEXEC: close on exec
+static int open_port(const char *path, int baud)
+{
+  // Open the serial device file.
+  // O_RDWR   : open for reading and writing
+  // O_NOCTTY : do NOT allow this serial device to become the controlling terminal
+  // O_CLOEXEC: automatically close this file descriptor if exec() is called
   int fd = open(path, O_RDWR | O_NOCTTY | O_CLOEXEC);
+
+  // If open() failed, return error.
   if (fd < 0) return -1;
 
   // ---- Reset prevention step A: clear HUPCL ----
-  // If this fails, we keep going (not always fatal).
+  // HUPCL = "Hang Up On Close". If set, the kernel drops modem lines
+  // (including DTR) when the port is closed, which can reset an Arduino.
+  // We attempt to clear it. If it fails we ignore the error and continue.
   (void)disable_hupcl_fd(fd);
 
+  // Structure used to hold serial port configuration parameters.
   struct termios tio;
-  if (tcgetattr(fd, &tio) != 0) { close(fd); return -1; }
 
-  // Raw mode: no line discipline, no echo, no special char handling.
+  // Read the current serial port configuration into tio.
+  // If this fails, close the file descriptor and return an error.
+  if (tcgetattr(fd, &tio) != 0)
+  {
+    close(fd);
+    return -1;
+  }
+
+  // Put the port into "raw mode".
+  // This disables all terminal-style processing such as:
+  //   - newline translations
+  //   - character echo
+  //   - Ctrl-C / Ctrl-S handling
+  //   - canonical (line-based) input buffering
+  // Raw mode ensures bytes are transmitted exactly as sent.
   cfmakeraw(&tio);
 
+  // Convert the requested baud rate (e.g. 115200) into a termios constant.
   speed_t spd = baud_to_speed(baud);
-  if (!spd) { close(fd); errno = EINVAL; return -1; }
+
+  // If the baud rate was invalid or unsupported, close port and return error.
+  if (!spd)
+  {
+    close(fd);
+    errno = EINVAL;  // invalid argument
+    return -1;
+  }
+
+  // Set the input baud rate.
   cfsetispeed(&tio, spd);
+
+  // Set the output baud rate.
   cfsetospeed(&tio, spd);
 
-  // 8N1
-  tio.c_cflag |= (CLOCAL | CREAD); // ignore modem control, enable receiver
+  // ----- Configure serial framing: 8N1 -----
+
+  // CLOCAL : ignore modem control signals (CD, DSR, etc.)
+  // CREAD  : enable the receiver
+  tio.c_cflag |= (CLOCAL | CREAD);
+
+  // Disable parity bit.
   tio.c_cflag &= ~PARENB;
+
+  // Use one stop bit (clear CSTOPB = 2 stop bits).
   tio.c_cflag &= ~CSTOPB;
+
+  // Clear current character size bits.
   tio.c_cflag &= ~CSIZE;
+
+  // Set character size to 8 bits.
   tio.c_cflag |= CS8;
 
-  // Non-block-ish read behavior; we still use select() for timed reads.
-  // VTIME is in deciseconds.
-  tio.c_cc[VMIN]  = 0;
-  tio.c_cc[VTIME] = 1; // 0.1 s
+  // ----- Configure read behavior -----
 
-  if (tcsetattr(fd, TCSAFLUSH, &tio) != 0) { close(fd); return -1; }
+  // VMIN = minimum number of bytes read() must receive before returning.
+  // Setting to 0 means read() may return immediately.
+  tio.c_cc[VMIN] = 0;
 
-  // ---- Reset prevention step B: keep DTR stable/high, RTS low ----
+  // VTIME = read timeout in deciseconds (0.1 seconds).
+  // VTIME=1 means read() waits up to 0.1 seconds for data.
+  tio.c_cc[VTIME] = 1;
+
+  // Apply the modified serial configuration.
+  // TCSAFLUSH means:
+  //   - apply changes after all pending output is transmitted
+  //   - discard any unread input already in the buffer
+  if (tcsetattr(fd, TCSAFLUSH, &tio) != 0)
+  {
+    close(fd);
+    return -1;
+  }
+
+  // ---- Reset prevention step B: stabilize modem lines ----
+  // Force DTR HIGH and RTS LOW using ioctl().
+  // Keeping DTR high avoids falling-edge resets on many Arduino boards.
   (void)set_dtr_rts(fd, true, false);
 
-  // Give USB-serial a moment to settle; then clear any junk in the RX buffer.
-  usleep(50 * 1000);
+  // Give the USB-serial interface a short moment to stabilize.
+  // Some adapters produce junk bytes immediately after opening.
+  usleep(50 * 1000);  // sleep 50 ms
+
+  // Flush any received garbage data from the input buffer.
+  // TCIFLUSH = flush pending input (RX buffer).
   tcflush(fd, TCIFLUSH);
 
+  // Return the configured file descriptor to the caller.
   return fd;
 }
 
