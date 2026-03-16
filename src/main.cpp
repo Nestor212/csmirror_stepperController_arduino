@@ -117,14 +117,14 @@ void loop()
   if (movingA && (now - lastTipTiltReport >= REPORT_INTERVAL_MS))
   {
     lastTipTiltReport = now;
-    Serial.print(F("tip/tilt pos: "));
+    Serial.print(F("a pos: "));
     Serial.println(tiptilt.stepper.currentPosition());
   }
 
   if (movingB && (now - lastAzimuthReport >= REPORT_INTERVAL_MS))
   {
     lastAzimuthReport = now;
-    Serial.print(F("azimuth pos: "));
+    Serial.print(F("b pos: "));
     Serial.println(azimuth.stepper.currentPosition());
   }
 
