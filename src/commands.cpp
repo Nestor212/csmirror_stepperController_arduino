@@ -351,7 +351,7 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
   if (speed > MOTOR_MAX_SPEED) 
   {
     speed = float(MOTOR_MAX_SPEED);
-    Serial.println(F("WARN: Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
+    Serial.println(F("WARN:  Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
   }
 
   if (dir != 0 && dir != 1) {
@@ -449,7 +449,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   if (speed > MOTOR_MAX_SPEED) 
   {
     speed = float(MOTOR_MAX_SPEED);
-    Serial.println(F("WARN: Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
+    Serial.println(F("WARN:  Speed capped to MOTOR_MAX_SPEED = 1500 sps."));
   }
 
   if (!ax->enabled) 
@@ -584,7 +584,7 @@ static void cmd_help(Axis& tiptilt, Axis& azimuth)
 
   Serial.println(F("  move <axis> <dir> <steps> [speed] [accel]"));
   Serial.println(F("  moveto <axis> <pos> [speed] [accel]"));
-  Serial.println(F("      - [speed] & [accel] are optional, if not present, system will use last used values."));
+  Serial.println(F("      - [speed] & [accel] are optional, if not present, system will use last set values."));
 
   Serial.println(F("Axis IDs:"));
   Serial.println(F("  a = Tip/Tilt"));
@@ -615,7 +615,7 @@ static void cmd_help(Axis& tiptilt, Axis& azimuth)
 
   Serial.println(F("Common responses:"));
   Serial.println(F("  ERR: <message>"));
-  Serial.println(F("  WARN:<message>"));
+  Serial.println(F("  WARN: <message>"));
 }
 
 void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis& azimuth)
