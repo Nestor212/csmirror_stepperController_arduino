@@ -9,6 +9,8 @@ constexpr uint32_t HOME_TIMEOUT_MS = 120000; // 60s homing timeout (set 0 to dis
 // -------------------- DRIVER SETTINGS --------------------
 static const bool TB6600_ENABLE_ACTIVE_LOW = true; // ENA asserted when LOW
 static const float MOTOR_MAX_SPEED = 1500.0f;      // steps/sec (tune)
+static const float MOTOR_MAX_ACCEL = 10000.0f;      // steps/(steps/sec) (tune)
+
 
 // Homing profile
 static const float HOME_FAST_SPEED = 1500.0f;      // steps/sec (tune)

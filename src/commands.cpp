@@ -341,14 +341,21 @@ static void cmd_move(SystemState& sys, Axis* ax, char axis_id, const LimitsState
     Serial.println(F(" is disabled."));
     return;
   }
+  // Clamp inputs
+  if (speed < 1.0f)  speed = 10.0f;
+  if (accel < 1.0f)  accel = 10000.0f;
 
-  if (speed < 1.0f) speed = 1.0f;
-  ax->stepper.setMaxSpeed(speed);
+  // Only update if changed
+  if (fabs(speed - ax->stepper.maxSpeed()) > 0.1f)
+  {
+    ax->stepper.setMaxSpeed(speed);
+  }
 
-  // keep your behavior: accel < 1 => huge accel (effectively constant speed)
-  if (accel < 1.0f) accel = 1000000.0f;
-  ax->stepper.setAcceleration(accel);
-  ax->accel = accel;
+  if (fabs(accel - ax->accel) > 0.1f)
+  {
+    ax->stepper.setAcceleration(accel);
+    ax->accel = accel;
+  }
 
   long cur = ax->stepper.currentPosition();
   long delta = (dir == 0) ? -steps : +steps;
@@ -398,7 +405,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
   }
 
   float speed = ax->stepper.maxSpeed();
-  float accel = 0.0f;
+  float accel = ax->accel;
 
   if (ntok >= 4) 
   {
@@ -428,19 +435,21 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
     Serial.println(F(" is disabled."));
     return;
   }
+  // Clamp inputs
+  if (speed < 1.0f)  speed = 10.0f;
+  if (accel < 1.0f)  accel = 10000.0f;
 
-  if (speed < 1.0f) 
+  // Only update if changed
+  if (fabs(speed - ax->stepper.maxSpeed()) > 0.1f)
   {
-    speed = 10.0f;
+    ax->stepper.setMaxSpeed(speed);
   }
-  ax->stepper.setMaxSpeed(speed);
 
-  if (accel < 1.0f) 
+  if (fabs(accel - ax->accel) > 0.1f)
   {
-    accel = 10000.0f;
+    ax->stepper.setAcceleration(accel);
+    ax->accel = accel;
   }
-  ax->stepper.setAcceleration(accel);
-  ax->accel = accel;
 
   updateLimitBlocks(*ax, lim);
   TargetBlockInfo bi;

@@ -39,14 +39,14 @@ void setup()
 
   // Default motion params (tune)
   tiptilt.stepper.setMaxSpeed(float(MOTOR_MAX_SPEED));
-  tiptilt.stepper.setAcceleration(100);
+  tiptilt.stepper.setAcceleration(MOTOR_MAX_ACCEL);
 
   azimuth.stepper.setMaxSpeed(float(MOTOR_MAX_SPEED));
-  azimuth.stepper.setAcceleration(100);
+  azimuth.stepper.setAcceleration(MOTOR_MAX_ACCEL);
 
   // Helps TB6600 clones that need wider STEP pulses
-  tiptilt.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
-  azimuth.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
+  // tiptilt.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
+  // azimuth.stepper.setMinPulseWidth(MIN_PULSE_WIDTH_US);
 
   systemStateInit(sys); // NEW
 
