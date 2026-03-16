@@ -5,7 +5,7 @@ import os
 import re
 import sys
 import time
-import termios
+import termios 
 
 import serial
 
