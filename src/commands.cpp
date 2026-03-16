@@ -437,7 +437,7 @@ static void cmd_moveto(SystemState& sys, Axis* ax, char axis_id, const LimitsSta
 
   if (accel < 1.0f) 
   {
-    accel = 1000000.0f;
+    accel = 10000.0f;
   }
   ax->stepper.setAcceleration(accel);
   ax->accel = accel;
