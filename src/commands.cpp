@@ -538,7 +538,6 @@ void handleCmd(String s, SystemState& sys, LimitsState& lim, Axis& tiptilt, Axis
   if (ntok <= 0) return;
 
   const char* action = tok[0];
-  Serial.println(action);
   CmdClass c = classify_cmd(action);
 
   if (c == CmdClass::UNKNOWN) {

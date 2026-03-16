@@ -453,7 +453,7 @@ static int get_status(int fd, StatusRec *out) {
   out->seq = -1;
   out->limitsEnabled = -1;
 
-  if (send_line(fd, "status") != 0) return -1;
+  if (send_line(fd, "status_long") != 0) return -1;
 
   char **lines = NULL;
   size_t n = 0;
