@@ -358,7 +358,7 @@ def repl(ser, state_path):
     drain(ser, 0.8)
 
     print("\nInteractive serial interface")
-    print("Type 'help' for commands\n")
+    print("Type 'help' for commands\n") 
 
     while True:
         try:
