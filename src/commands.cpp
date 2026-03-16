@@ -255,7 +255,6 @@ static void cmd_set_axis(SystemState& sys, Axis* ax, char axis_id, int ntok, cha
 
   long pos = 0;
   long maxv = 0;
-  int valid = 0;
 
   if (!parse_long(tok[2], pos)) {
     Serial.println(F("ERR:Invalid position."));
