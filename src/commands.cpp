@@ -498,6 +498,8 @@ void printStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, 
     Serial.print(F(" "));
     Serial.print(ax.enabled ? 1 : 0);
     Serial.print(F(" "));
+    Serial.print(ax.stepper.isRunning() ? 1 : 0);
+    Serial.print(F(" "));
     Serial.print(ax.stepper.currentPosition());
     Serial.print(F(" "));
     Serial.print(ax.maxPos);
@@ -526,6 +528,8 @@ void printStatus_long(const SystemState& sys, const LimitsState& lim, Axis& tipt
     Serial.print(axis_id);
     Serial.print(F(" en="));
     Serial.print(ax.enabled ? 1 : 0);
+    Serial.print(F(" mov="));
+    Serial.print(ax.stepper.isRunning() ? 1 : 0);
     Serial.print(F(" pos="));
     Serial.print(ax.stepper.currentPosition());
     Serial.print(F(" max="));
@@ -549,7 +553,11 @@ void printStatus_long(const SystemState& sys, const LimitsState& lim, Axis& tipt
 void printPosStatus(const SystemState& sys, const LimitsState& lim, Axis& tiptilt, Axis& azimuth)
 {
   // if (tiptilt.stepper.isRunning() || azimuth.stepper.isRunning()) return;
+  Serial.print(tiptilt.stepper.isRunning() ? 1 : 0);
+  Serial.print(" ");
   Serial.print(tiptilt.stepper.currentPosition());
+  Serial.print(" ");
+  Serial.print(azimuth.stepper.isRunning() ? 1 : 0);
   Serial.print(" ");
   Serial.println(azimuth.stepper.currentPosition());
   return;
@@ -598,18 +606,18 @@ static void cmd_help(Axis& tiptilt, Axis& azimuth)
 
   Serial.println(F("OUTPUT FORMAT"));
   Serial.println(F("status:"));
-  Serial.println(F("  <axis> <enabled> <pos> <max>"));
-  Serial.println(F("  example: a 1 123 5000"));
+  Serial.println(F("  <axis> <enabled> <moving> <pos> <max>"));
+  Serial.println(F("  example: a 1 0 123 5000"));
 
   Serial.println(F("status_long:"));
   Serial.println(F("  boot_id=<u32>"));
   Serial.println(F("  limitsEnabled=<0|1>"));
-  Serial.println(F("  Tip/Tilt id=<a|b> en=<0|1> pos=<long> max=<long> homed=<0|1> valid=<0|1> lolim=<0|1> hilim=<0|1>"));
-  Serial.println(F("  Azimuth  id=<a|b> en=<0|1> pos=<long> max=<long> homed=<0|1> valid=<0|1> lolim=<0|1> hilim=<0|1>"));
+  Serial.println(F("  Tip/Tilt id=<a|b> en=<0|1> mov=<0|1> pos=<long> max=<long> homed=<0|1> valid=<0|1> lolim=<0|1> hilim=<0|1>"));
+  Serial.println(F("  Azimuth  id=<a|b> en=<0|1> mov=<0|1> pos=<long> max=<long> homed=<0|1> valid=<0|1> lolim=<0|1> hilim=<0|1>"));
 
   Serial.println(F("pos / position:"));
-  Serial.println(F("  <tiptilt_pos> <azimuth_pos>"));
-  Serial.println(F("  example: 120 -45"));
+  Serial.println(F("  <tiptilt_moving> <tiptilt_pos> <azimuth_moving> <azimuth_pos>"));
+  Serial.println(F("  example: 1 120 0 -45"));
 
   Serial.println(F("Common responses:"));
   Serial.println(F("  ERR: <message>"));
